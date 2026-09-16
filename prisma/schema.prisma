@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  LANDLORD
+  UNIVERSITY_ADMIN
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  FLAGGED
+  REJECTED
+}
+
+enum TenancyStatus {
+  PENDING
+  ACTIVE
+  ENDED
+}
+
+enum ConfirmationStatus {
+  DRAFT
+  PENDING_REVIEW
+  ENDORSED
+  SENT_TO_FUNDER
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  ESCALATED
+}
+
+enum ChecklistCategory {
+  SECURITY
+  FIRE_SAFETY
+  UTILITIES
+  BUILDING_STRUCTURE
+  LOCATION_RISK
+}
+
+model User {
+  id              String    @id @default(cuid())
+  role            UserRole
+  name            String
+  surname         String
+  idNumber        String?
+  email           String    @unique // login email
+  phone           String?
+  passwordHash    String
+
+  // University verification (students only)
+  universityEmail String?   @unique
+  emailVerifiedAt DateTime?
+  otpCodeHash     String?
+  otpExpiresAt    DateTime?
+  otpAttempts     Int       @default(0)
+
+  // Onboarding tracking
+  onboardingCompleted Boolean   @default(false)
+  onboardingStep      Int       @default(1)
+  studentProfile      StudentProfile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties          Property[]           @relation("LandlordProperties")
+  applications        Application[]
+  tenancies           Tenancy[]
+  confirmationLetters ConfirmationLetter[]  @relation("StudentLetters")
+  endorsedLetters      ConfirmationLetter[] @relation("EndorsingAdmin")
+  reportsFiled        SafetyReport[]        @relation("ReportedBy")
+
+  @@index([email])
+  @@index([role])
+}
+
+model StudentProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Step 1: Personal Details (minus ID number)
+  dateOfBirth     DateTime?
+  gender          String?
+  nationality     String?
+  preferredLanguage String?
+
+  // Step 2: Contact & Study Details
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactRelationship String?
+  currentAddress               String?
+  city                         String?
+  province                     String?
+
+  isEnrolled                   Boolean   @default(false)
+  universityName               String?
+  studentNumber                String?
+  degreeProgram                String?
+  yearOfStudy                  String?
+
+  // Step 3: Funding & Household Details
+  fundingType                  String?   // NSFAS, BURSARY, SELF_FUNDED, LOAN, OTHER
+  funderName                   String?
+  funderReference              String?
+  funderContactEmail           String?
+  monthlyAllowance             Decimal?
+  householdIncomeBracket       String?
+  guarantorName                String?
+  guarantorPhone               String?
+  guarantorRelationship        String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Property {
+  id                String         @id @default(cuid())
+  title             String
+  address           String
+  suburb            String
+  city              String
+  priceMonthly      Decimal
+  depositAmount     Decimal?
+  bedrooms          Int
+  bathrooms         Int?
+  maxOccupants      Int?
+  description       String?
+  amenities         String[]
+  distanceToCampus  Decimal? // in km
+  images            String[]       @default([])
+
+  safetyScore       Decimal?       // 0-10, computed from ChecklistItem results
+  status            PropertyStatus @default(DRAFT)
+
+  landlordId String
+  landlord   User   @relation("LandlordProperties", fields: [landlordId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklistItems ChecklistItem[]
+  applications   Application[]
+  tenancies      Tenancy[]
+  reports        SafetyReport[]
+
+  @@index([landlordId])
+  @@index([status])
+  @@index([priceMonthly])
+  @@index([safetyScore])
+}
+
+// One row per checklist question. A property is seeded with the standard
+// question set on creation; the landlord answers each one.
+model ChecklistItem {
+  id         String            @id @default(cuid())
+  propertyId String
+  property   Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  category   ChecklistCategory
+  label      String
+  passed     Boolean?
+  weight     Int               @default(1) // relative importance in score calc
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([propertyId])
+  @@index([category])
+}
+
+model Application {
+  id         String            @id @default(cuid())
+  studentId  String
+  student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  message    String?
+  status     ApplicationStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+
+  @@unique([studentId, propertyId])
+}
+
+model Tenancy {
+  id         String        @id @default(cuid())
+  studentId  String
+  student    User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime?
+  status     TenancyStatus @default(PENDING)
+
+  confirmationLetter ConfirmationLetter?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([propertyId])
+}
+
+model ConfirmationLetter {
+  id              String             @id @default(cuid())
+  tenancyId       String             @unique
+  tenancy         Tenancy            @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+
+  studentId       String
+  student         User               @relation("StudentLetters", fields: [studentId], references: [id])
+  studentName     String
+  studentEmail    String
+
+  propertyAddress String
+  safetyScore     Decimal?
+
+  issuedDate      DateTime           @default(now())
+  status          ConfirmationStatus @default(DRAFT)
+
+  endorsedByAdminId String?
+  endorsedByAdmin   User?            @relation("EndorsingAdmin", fields: [endorsedByAdminId], references: [id])
+  endorsedAt        DateTime?
+
+  funderEmail     String?
+  sentToFunderAt  DateTime?
+
+  pdfUrl          String?
+  letterReference String   @unique @default(uuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SafetyReport {
+  id          String       @id @default(cuid())
+  reporterId  String
+  reporter    User         @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  propertyId  String
+  property    Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  subject     String
+  description String
+  status      ReportStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([propertyId])
+  @@index([reporterId])
+  @@index([status])
+}
