@@ -23,17 +23,41 @@ const checklistUpdateSchema = z.object({
   ),
 });
 
+const physicalVerificationSchema = z.object({
+  physicalInspectionAt: z.string().datetime(),
+  physicalInspectorName: z.string().min(2),
+  accreditationReference: z.string().min(3).optional(),
+});
+
 // Landlord submits/updates checklist answers. Safety score is recalculated
 // server-side on every save — never trust a client-submitted score, since
 // that field directly drives the public "verified safe" signal.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
-  if (!session || session.role !== "LANDLORD") {
+  if (!session || (session.role !== "LANDLORD" && session.role !== "UNIVERSITY_ADMIN")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const property = await prisma.property.findUnique({ where: { id: params.id } });
   if (!property) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (session.role === "UNIVERSITY_ADMIN") {
+    const body = await req.json();
+    const parsed = physicalVerificationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const updated = await prisma.property.update({
+      where: { id: params.id },
+      data: {
+        physicalInspectionAt: new Date(parsed.data.physicalInspectionAt),
+        physicalInspectorName: parsed.data.physicalInspectorName,
+        accreditationReference: parsed.data.accreditationReference,
+      },
+    });
+    return NextResponse.json({ property: updated });
+  }
+
   if (property.landlordId !== session.sub) {
     return NextResponse.json({ error: "Not your property" }, { status: 403 });
   }

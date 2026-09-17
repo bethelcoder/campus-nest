@@ -768,7 +768,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                   {/* File Upload to Vercel Blob */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Upload Certified Copy (PDF/JPG/PNG) <span className="text-red-500">*</span>
+                      Upload Certified ID Copy (PDF/JPG/PNG) <span className="text-red-500">*</span>
                     </label>
                     <label className="flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-dashed border-emerald-300 bg-white hover:bg-emerald-50/50 cursor-pointer transition-colors text-center">
                       <input

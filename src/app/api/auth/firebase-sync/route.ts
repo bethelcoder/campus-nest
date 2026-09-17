@@ -9,7 +9,7 @@ const syncSchema = z.object({
   surname: z.string().optional().default(""),
   uid: z.string().min(1),
   photoURL: z.string().optional().nullable(),
-  role: z.enum(["STUDENT", "LANDLORD"]).default("STUDENT"),
+  role: z.enum(["STUDENT", "LANDLORD", "SRC_REPRESENTATIVE"]).default("STUDENT"),
 });
 
 export async function POST(req: NextRequest) {
@@ -87,7 +87,9 @@ export async function POST(req: NextRequest) {
       onboardingStep: user.onboardingStep,
     });
 
-    const nextStep = !user.onboardingCompleted
+    const nextStep = user.role === "SRC_REPRESENTATIVE"
+      ? "/dashboard/src"
+      : !user.onboardingCompleted
       ? user.role === "LANDLORD"
         ? "/landlord/onboarding"
         : "/onboarding"

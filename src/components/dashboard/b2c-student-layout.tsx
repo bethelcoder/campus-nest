@@ -82,13 +82,13 @@ export default function B2cStudentLayout({
   ];
 
   const complianceNavItems = [
-    { label: "Funding & Bursary", href: "/dashboard/student#funding", icon: GraduationCapIcon },
-    { label: "University Domain", href: "/dashboard/student#domain", icon: ShieldCheckIcon, badge: "Verified" },
-    { label: "QR Funder Letter", href: "/letters/sample", icon: FileTextIcon },
+    { label: "Funding & Bursary", href: "/dashboard/student/funding", icon: GraduationCapIcon, badge: undefined },
+  
+    { label: "QR Funder Letter", href: "/dashboard/student/funder-letter", icon: FileTextIcon, badge: undefined },
   ];
 
   const safetyNavItems = [
-    { label: "Repairs & Triage", href: "/dashboard/student#triage", icon: AlertTriangleIcon },
+    { label: "Repairs and Maintenance", href: "/dashboard/student/maintenance", icon: AlertTriangleIcon },
   ];
 
   return (
