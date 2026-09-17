@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       onboardingCompleted: false,
       onboardingStep: 1,
       studentProfile: data.role === "STUDENT" ? { create: {} } : undefined,
+      landlordProfile: data.role === "LANDLORD" ? { create: {} } : undefined,
     },
     select: {
       id: true,
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json(
     {
       user,
-      nextStep: data.role === "STUDENT" ? "onboarding" : "login",
+      nextStep: data.role === "LANDLORD" ? "landlord-onboarding" : "onboarding",
     },
     { status: 201 }
   );

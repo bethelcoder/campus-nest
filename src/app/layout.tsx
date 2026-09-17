@@ -1,15 +1,37 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Student Housing Safety & Confirmation Platform",
-  description: "Verified, safe student housing with automated funder confirmation letters.",
+  title: {
+    default: "CampusNest | Curated Student Housing Safety & Confirmation Platform",
+    template: "%s | CampusNest",
+  },
+  description:
+    "Centralized Trust Registry and Compliance Utility bridging South African students, small landlords, enterprise housing operators, and Student Representative Councils (SRCs).",
+  keywords: [
+    "student housing South Africa",
+    "NSFAS accredited accommodation",
+    "student safety audit",
+    "funder confirmation letter",
+    "DHET norms and standards",
+    "Wits student housing",
+    "UJ student accommodation",
+  ],
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b192c",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="scroll-smooth">
+      <body className="min-h-screen font-poppins bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white">
+        {children}
+      </body>
     </html>
   );
 }
+

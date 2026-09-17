@@ -152,6 +152,10 @@ function LoginForm() {
         router.push("/onboarding");
         return;
       }
+      if (data.user.role === "LANDLORD" && !data.user.onboardingCompleted) {
+        router.push("/landlord/onboarding");
+        return;
+      }
 
       const roleHome: Record<string, string> = {
         STUDENT: "/dashboard",
@@ -254,6 +258,10 @@ function RegisterForm({ role }: { role: Role }) {
         setError(
           typeof data.error === "string" ? data.error : "Registration failed",
         );
+        return;
+      }
+      if (data.nextStep === "landlord-onboarding" || role === "LANDLORD") {
+        router.push("/landlord/onboarding");
         return;
       }
       if (data.nextStep === "onboarding" || role === "STUDENT") {

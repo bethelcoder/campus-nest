@@ -10,6 +10,7 @@ enum UserRole {
   STUDENT
   LANDLORD
   UNIVERSITY_ADMIN
+  SRC_REPRESENTATIVE
 }
 
 enum PropertyStatus {
@@ -42,8 +43,21 @@ enum ApplicationStatus {
 
 enum ReportStatus {
   OPEN
+  UNDER_INTERVENTION
   RESOLVED
   ESCALATED
+}
+
+enum TriageType {
+  STANDARD_MAINTENANCE
+  RIGHTS_VIOLATION_CRISIS
+}
+
+enum TriageSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL_EMERGENCY
 }
 
 enum ChecklistCategory {
@@ -75,6 +89,7 @@ model User {
   onboardingCompleted Boolean   @default(false)
   onboardingStep      Int       @default(1)
   studentProfile      StudentProfile?
+  landlordProfile     LandlordProfile?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,6 +140,34 @@ model StudentProfile {
   guarantorName                String?
   guarantorPhone               String?
   guarantorRelationship        String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model LandlordProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Step 1: Personal & Business Identity
+  entityType      String?   // INDIVIDUAL, PRIVATE_RESIDENCE, AGENCY
+  companyName     String?
+  companyRegNumber String?
+  taxNumber       String?
+  businessAddress String?
+  contactPhone    String?
+
+  // Step 2: Primary Residence Draft
+  draftResidenceName     String?
+  draftAddress           String?
+  draftSuburb            String?
+  draftCity              String?
+  draftNearestUniversity String?
+  draftDistanceToCampus  Decimal?
+  draftBedrooms          Int?
+  draftPriceMonthly      Decimal?
+  draftAmenities         String[]  @default([])
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -247,18 +290,31 @@ model ConfirmationLetter {
 }
 
 model SafetyReport {
-  id          String       @id @default(cuid())
+  id          String         @id @default(cuid())
   reporterId  String
-  reporter    User         @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter    User           @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
   propertyId  String
-  property    Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property    Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  type        TriageType     @default(STANDARD_MAINTENANCE)
+  severity    TriageSeverity @default(MEDIUM)
+  category    String?        // PLUMBING, ELECTRICAL, ILLEGAL_EVICTION, EXTORTION, etc.
   subject     String
   description String
-  status      ReportStatus @default(OPEN)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status      ReportStatus   @default(OPEN)
+  
+  slaHours    Int            @default(48)
+  slaExpiresAt DateTime?
+  resolvedAt  DateTime?
+  evidenceUrls String[]      @default([])
+  actionNotes String?
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([propertyId])
   @@index([reporterId])
   @@index([status])
+  @@index([type])
+  @@index([severity])
 }

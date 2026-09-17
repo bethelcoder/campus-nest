@@ -31,13 +31,25 @@ async function main() {
 
   const landlord = await prisma.user.upsert({
     where: { email: "landlord@example.com" },
-    update: {},
+    update: {
+      onboardingCompleted: true,
+      onboardingStep: 3,
+    },
     create: {
       role: "LANDLORD",
       name: "Sipho",
       surname: "Dlamini",
       email: "landlord@example.com",
+      phone: "+27 82 555 0192",
+      idNumber: "8504125192083",
       passwordHash: password,
+      onboardingCompleted: true,
+      onboardingStep: 3,
+      landlordProfile: {
+        create: {
+          entityType: "INDIVIDUAL",
+        },
+      },
     },
   });
 
