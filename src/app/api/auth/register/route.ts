@@ -6,12 +6,13 @@ import { generateOtp, hashOtp, otpExpiryDate, isAllowedUniversityDomain } from "
 import { sendOtpEmail } from "@/lib/email";
 
 const registerSchema = z.object({
-  role: z.enum(["STUDENT", "LANDLORD"]), // admins are provisioned manually, not self-registered
+  role: z.enum(["STUDENT", "LANDLORD", "SRC_REPRESENTATIVE"]), // university admins are provisioned manually
   name: z.string().min(1),
   surname: z.string().min(1),
   idNumber: z.string().min(6).optional(),
   email: z.string().email(),
   universityEmail: z.string().email().optional(),
+  institutionName: z.string().trim().min(2).optional(),
   phone: z.string().optional(),
   password: z.string().min(8),
 });
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
   }
   const data = parsed.data;
 
+  if (data.role === "SRC_REPRESENTATIVE" && (!data.universityEmail || !data.institutionName)) {
+    return NextResponse.json(
+      { error: "SRC registration requires a university name and student/university email" },
+      { status: 400 }
+    );
+  }
+
   if (data.role === "STUDENT" && data.universityEmail && !isAllowedUniversityDomain(data.universityEmail)) {
     return NextResponse.json(
       { error: "That email domain is not on the recognised university list" },
@@ -31,7 +39,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  const loginEmail = data.role === "SRC_REPRESENTATIVE" ? data.universityEmail! : data.email;
+  const existing = await prisma.user.findUnique({ where: { email: loginEmail } });
   if (existing) {
     return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
   }
@@ -47,8 +56,9 @@ export async function POST(req: NextRequest) {
       name: data.name,
       surname: data.surname,
       idNumber: data.idNumber,
-      email: data.email,
+      email: loginEmail,
       universityEmail: data.universityEmail,
+      institutionName: data.institutionName,
       phone: data.phone,
       passwordHash,
       onboardingCompleted: false,
@@ -78,7 +88,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json(
     {
       user,
-      nextStep: data.role === "LANDLORD" ? "landlord-onboarding" : "onboarding",
+      nextStep: data.role === "LANDLORD" ? "landlord-onboarding" : data.role === "STUDENT" ? "onboarding" : "src-dashboard",
     },
     { status: 201 }
   );

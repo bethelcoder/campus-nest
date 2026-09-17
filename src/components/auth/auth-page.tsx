@@ -8,7 +8,7 @@ import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { loginWithGoogle } from "@/lib/firebase";
 
-type Role = "STUDENT" | "LANDLORD";
+type Role = "STUDENT" | "LANDLORD" | "SRC_REPRESENTATIVE";
 type Mode = "login" | "register";
 
 const roleCopy = {
@@ -36,6 +36,19 @@ const roleCopy = {
       "Manage applications from one dashboard",
     ],
     loginPrompt: "Searching for student housing?",
+    loginLink: "Student sign in",
+  },
+  SRC_REPRESENTATIVE: {
+    eyebrow: "Support student rights",
+    title: "Help students resolve housing issues.",
+    description:
+      "Review escalated residence complaints and coordinate timely support for students.",
+    points: [
+      "See escalated complaints in one queue",
+      "Coordinate intervention with landlords",
+      "Track urgent cases through resolution",
+    ],
+    loginPrompt: "Looking for student housing?",
     loginLink: "Student sign in",
   },
 } as const;
@@ -117,7 +130,9 @@ export default function AuthPage({ role, mode }: { role: Role; mode: Mode }) {
 }
 
 function rolePath(role: Role, mode: Mode) {
-  return role === "LANDLORD" ? `/landlord/${mode}` : `/${mode}`;
+  if (role === "LANDLORD") return `/landlord/${mode}`;
+  if (role === "SRC_REPRESENTATIVE") return `/src/${mode}`;
+  return `/${mode}`;
 }
 
 function LoginForm({ role }: { role: Role }) {
@@ -136,6 +151,7 @@ function LoginForm({ role }: { role: Role }) {
     router.prefetch("/landlord/onboarding");
     router.prefetch("/dashboard/student");
     router.prefetch("/dashboard/landlord");
+    router.prefetch("/dashboard/src");
   }, [router]);
 
   async function handleGoogleLogin() {
@@ -168,7 +184,7 @@ function LoginForm({ role }: { role: Role }) {
       }
 
       setRedirecting(true);
-      const targetUrl = next || data.nextStep || (role === "LANDLORD" ? "/dashboard/landlord" : "/dashboard/student");
+      const targetUrl = next || data.nextStep || (role === "LANDLORD" ? "/dashboard/landlord" : role === "SRC_REPRESENTATIVE" ? "/dashboard/src" : "/dashboard/student");
       window.location.href = targetUrl;
     } catch (err: any) {
       console.error("Google login error:", err);
@@ -210,6 +226,7 @@ function LoginForm({ role }: { role: Role }) {
         STUDENT: "/dashboard/student",
         LANDLORD: "/dashboard/landlord",
         UNIVERSITY_ADMIN: "/admin/letters",
+        SRC_REPRESENTATIVE: "/dashboard/src",
       };
       router.push(next ?? roleHome[data.user.role] ?? "/");
     } finally {
@@ -296,6 +313,7 @@ function RegisterForm({ role }: { role: Role }) {
     surname: "",
     email: "",
     universityEmail: "",
+    institutionName: "",
     phone: "",
     password: "",
   });
@@ -309,6 +327,7 @@ function RegisterForm({ role }: { role: Role }) {
     router.prefetch("/landlord/onboarding");
     router.prefetch("/dashboard/student");
     router.prefetch("/dashboard/landlord");
+    router.prefetch("/dashboard/src");
   }, [router]);
 
   function update(field: keyof typeof form, value: string) {
@@ -345,7 +364,9 @@ function RegisterForm({ role }: { role: Role }) {
       }
 
       setRedirecting(true);
-      const targetUrl = data.nextStep || (role === "LANDLORD" ? "/landlord/onboarding" : "/onboarding");
+      const targetUrl = data.user?.role === "SRC_REPRESENTATIVE"
+        ? "/dashboard/src"
+        : data.nextStep || (role === "LANDLORD" ? "/landlord/onboarding" : "/onboarding");
       window.location.href = targetUrl;
     } catch (err: any) {
       console.error("Google register error:", err);
@@ -365,7 +386,9 @@ function RegisterForm({ role }: { role: Role }) {
         body: JSON.stringify({
           role,
           ...form,
+          email: role === "SRC_REPRESENTATIVE" ? form.universityEmail : form.email,
           universityEmail: form.universityEmail || undefined,
+          institutionName: form.institutionName || undefined,
         }),
       });
       const data = await response.json();
@@ -377,11 +400,15 @@ function RegisterForm({ role }: { role: Role }) {
         return;
       }
       setRedirecting(true);
-      if (data.nextStep === "landlord-onboarding" || role === "LANDLORD") {
+      if (data.user?.role === "SRC_REPRESENTATIVE") {
+        window.location.href = "/dashboard/src";
+        return;
+      }
+      if (data.nextStep === "landlord-onboarding" || data.user?.role === "LANDLORD") {
         window.location.href = "/landlord/onboarding";
         return;
       }
-      if (data.nextStep === "onboarding" || role === "STUDENT") {
+      if (data.nextStep === "onboarding" || data.user?.role === "STUDENT") {
         window.location.href = "/onboarding";
         return;
       }
@@ -453,26 +480,52 @@ function RegisterForm({ role }: { role: Role }) {
           />
         </label>
       </div>
-      <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-        Email address
-        <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
-          required
-          type="email"
-          value={form.email}
-          onChange={(event) => update("email", event.target.value)}
-          placeholder="you@example.com"
-        />
-      </label>
-      <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-        Phone number
-        <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
-          required
-          type="tel"
-          value={form.phone}
-          onChange={(event) => update("phone", event.target.value)}
-          placeholder="+27 00 000 0000"
-        />
-      </label>
+      {role === "SRC_REPRESENTATIVE" ? (
+        <>
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            University or institution
+            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+              required
+              value={form.institutionName}
+              onChange={(event) => update("institutionName", event.target.value)}
+              placeholder="University you work for"
+            />
+          </label>
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            Student or university email
+            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+              required
+              type="email"
+              value={form.universityEmail}
+              onChange={(event) => update("universityEmail", event.target.value)}
+              placeholder="you@university.ac.za"
+            />
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            Email address
+            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+              required
+              type="email"
+              value={form.email}
+              onChange={(event) => update("email", event.target.value)}
+              placeholder="you@example.com"
+            />
+          </label>
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            Phone number
+            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+              required
+              type="tel"
+              value={form.phone}
+              onChange={(event) => update("phone", event.target.value)}
+              placeholder="+27 00 000 0000"
+            />
+          </label>
+        </>
+      )}
 
       <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
         Password

@@ -76,6 +76,7 @@ model User {
   idNumber        String?
   email           String    @unique // login email
   phone           String?
+  institutionName String?
   passwordHash    String?
   firebaseUid     String?   @unique
 
@@ -100,6 +101,7 @@ model User {
   tenancies           Tenancy[]
   confirmationLetters ConfirmationLetter[]  @relation("StudentLetters")
   endorsedLetters      ConfirmationLetter[] @relation("EndorsingAdmin")
+  funderLetterRequests FunderLetterRequest[]
   reportsFiled        SafetyReport[]        @relation("ReportedBy")
 
   @@index([email])
@@ -198,6 +200,9 @@ model Property {
 
   safetyScore       Decimal?       // 0-10, computed from ChecklistItem results
   status            PropertyStatus @default(DRAFT)
+  physicalInspectionAt DateTime?
+  physicalInspectorName String?
+  accreditationReference String?
 
   landlordId String
   landlord   User   @relation("LandlordProperties", fields: [landlordId], references: [id], onDelete: Cascade)
@@ -209,6 +214,7 @@ model Property {
   applications   Application[]
   tenancies      Tenancy[]
   reports        SafetyReport[]
+  funderLetterRequests FunderLetterRequest[]
 
   @@index([landlordId])
   @@index([status])
@@ -244,7 +250,33 @@ model Application {
   status     ApplicationStatus @default(PENDING)
   createdAt  DateTime          @default(now())
 
+  funderLetterRequest FunderLetterRequest?
+
   @@unique([studentId, propertyId])
+}
+
+model FunderLetterRequest {
+  id                    String             @id @default(cuid())
+  applicationId         String             @unique
+  application           Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  studentId             String
+  student               User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId            String
+  property              Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  funderEmail           String?
+  status                ConfirmationStatus @default(PENDING_REVIEW)
+  letterReference       String             @unique @default(uuid())
+  requestedAt           DateTime           @default(now())
+  physicalInspectionAt  DateTime
+  physicalInspectorName String
+  accreditationReference String?
+  safetyScore           Decimal?
+  checklistPassed      Int
+  checklistTotal       Int
+  issuedAt              DateTime?
+
+  @@index([studentId])
+  @@index([propertyId])
 }
 
 model Tenancy {
