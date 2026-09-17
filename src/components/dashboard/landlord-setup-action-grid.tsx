@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DashedCircleIcon,
   CompletedCheckIcon,
@@ -10,6 +11,7 @@ import {
   ShieldCheckIcon,
   FileTextIcon,
 } from "@/components/common/Icons";
+import { LuPlus, LuBuilding2, LuShield, LuUsers } from "react-icons/lu";
 
 export interface SetupCardItem {
   id: string;
@@ -22,11 +24,14 @@ export interface SetupCardItem {
 
 interface LandlordSetupActionGridProps {
   user?: {
+    id?: string;
     name: string;
     surname: string;
     email: string;
     entityType?: string | null;
   };
+  initialProperties?: any[];
+  initialApplications?: any[];
 }
 
 export default function LandlordSetupActionGrid({
@@ -36,36 +41,74 @@ export default function LandlordSetupActionGrid({
     email: "landlord@example.com",
     entityType: "Private Residence Operator",
   },
+  initialProperties = [],
+  initialApplications = [],
 }: LandlordSetupActionGridProps) {
+  const router = useRouter();
+  const [properties, setProperties] = useState<any[]>(initialProperties);
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+
+  const [applications, setApplications] = useState<any[]>(
+    initialApplications.length > 0
+      ? initialApplications
+      : [
+          {
+            id: "APP-891",
+            studentName: "Lerato Nkosi",
+            studentNumber: "2489102",
+            institution: "University of the Witwatersrand",
+            funder: "NSFAS Direct (R4,800/mo)",
+            unit: "Braamfontein Student Loft (Unit 4B)",
+            status: "PENDING",
+          },
+          {
+            id: "APP-892",
+            studentName: "Kagiso Molefe",
+            studentNumber: "2198045",
+            institution: "University of Johannesburg",
+            funder: "Funded - Sasol Bursary (R5,500/mo)",
+            unit: "Braamfontein Student Loft (Unit 2A)",
+            status: "PENDING",
+          },
+        ]
+  );
+
+  const hasProperties = properties.length > 0;
+  const bestSafetyScore = properties.find((p) => p.safetyScore !== null)?.safetyScore;
+
   const [cards, setCards] = useState<SetupCardItem[]>([
     {
       id: "business_kyc",
-      title: "Business KYC & Identity",
-      description: "Submit individual or company details, RSA ID / CIPC number, and verified contact.",
-      actionText: "Review identity",
+      title: "Business KYC & Provider Profile",
+      description: "Accredited provider operating credentials and verified contact address.",
+      actionText: "Review profile",
       isCompleted: true,
       isSkipped: false,
     },
     {
       id: "primary_residence",
-      title: "Primary Residence Profile",
-      description: "Set up student room capacity, monthly rental rates, and nearest university campus.",
-      actionText: "Edit residence",
-      isCompleted: true,
+      title: "Student Residence Listings",
+      description: hasProperties
+        ? `${properties.length} active residence listing(s) configured in your portfolio.`
+        : "Add student room capacity, monthly rental rates, and campus proximity.",
+      actionText: hasProperties ? `Manage (${properties.length})` : "+ Add residence",
+      isCompleted: hasProperties,
       isSkipped: false,
     },
     {
       id: "safety_audit",
       title: "13-Point Municipal Safety Audit",
-      description: "Audit fire extinguishers, smoke alarms, biometric access, and electrical CoC.",
-      actionText: "View score: 9.2",
-      isCompleted: true,
+      description: bestSafetyScore
+        ? `Audit completed. Verified Safety Rating: ${Number(bestSafetyScore).toFixed(1)}/10.`
+        : "Complete perimeter, fire extinguisher, and electrical CoC safety checks.",
+      actionText: bestSafetyScore ? `Score: ${Number(bestSafetyScore).toFixed(1)}` : "Audit safety",
+      isCompleted: !!bestSafetyScore,
       isSkipped: false,
     },
     {
       id: "custom_addenda",
-      title: "Configure Custom Application Addenda",
-      description: "Inject landlord-specific requirements (e.g. medical disclosure, guarantor affidavits).",
+      title: "Configure Custom Lease Addenda",
+      description: "Inject landlord-specific requirements (e.g. house rules, quiet hours, deposit policies).",
       actionText: "Setup addenda",
       isCompleted: false,
       isSkipped: false,
@@ -75,7 +118,7 @@ export default function LandlordSetupActionGrid({
       title: "Process Inbound Applications",
       description: "Review pre-verified applicant profiles and bind active tenancy lease agreements.",
       actionText: "Review applicants",
-      isCompleted: false,
+      isCompleted: applications.some((a) => a.status === "ACCEPTED"),
       isSkipped: false,
     },
     {
@@ -88,30 +131,23 @@ export default function LandlordSetupActionGrid({
     },
   ]);
 
-  const [activeModal, setActiveModal] = useState<string | null>(null);
-
-  const [applications, setApplications] = useState([
-    {
-      id: "APP-891",
-      studentName: "Lerato Nkosi",
-      studentNumber: "2489102",
-      institution: "University of the Witwatersrand",
-      funder: "NSFAS Direct (R4,800/mo)",
-      unit: "Braamfontein Student Loft (Unit 4B)",
-      status: "PENDING",
-    },
-    {
-      id: "APP-892",
-      studentName: "Kagiso Molefe",
-      studentNumber: "2198045",
-      institution: "University of Johannesburg",
-      funder: "Funded - Sasol Bursary (R5,500/mo)",
-      unit: "Braamfontein Student Loft (Unit 2A)",
-      status: "PENDING",
-    },
-  ]);
-
   const handleAction = (id: string) => {
+    if (id === "primary_residence") {
+      if (hasProperties) {
+        router.push("/landlord/properties");
+      } else {
+        router.push("/landlord/properties/new");
+      }
+      return;
+    }
+    if (id === "safety_audit") {
+      if (hasProperties) {
+        router.push("/landlord/properties");
+      } else {
+        router.push("/landlord/properties/new");
+      }
+      return;
+    }
     setActiveModal(id);
   };
 
@@ -124,10 +160,40 @@ export default function LandlordSetupActionGrid({
     setActiveModal(null);
   };
 
-  const handleAppDecision = (id: string, decision: "ACCEPTED" | "REJECTED") => {
+  const handlePropertyCreated = (newProp: any) => {
+    setProperties((prev) => [newProp, ...prev]);
+    setCards((prev) =>
+      prev.map((c) => {
+        if (c.id === "primary_residence") {
+          return {
+            ...c,
+            isCompleted: true,
+            description: `${properties.length + 1} active residence listing(s) in your portfolio.`,
+            actionText: `Manage (${properties.length + 1})`,
+          };
+        }
+        if (c.id === "safety_audit" && newProp.safetyScore) {
+          return {
+            ...c,
+            isCompleted: true,
+            description: `Audit completed. Verified Safety Rating: ${Number(newProp.safetyScore).toFixed(1)}/10.`,
+            actionText: `Score: ${Number(newProp.safetyScore).toFixed(1)}`,
+          };
+        }
+        return c;
+      })
+    );
+  };
+
+  const handleAppDecision = async (id: string, decision: "ACCEPTED" | "REJECTED") => {
     setApplications((prev) =>
       prev.map((app) => (app.id === id ? { ...app, status: decision } : app))
     );
+    if (decision === "ACCEPTED") {
+      setCards((prev) =>
+        prev.map((c) => (c.id === "inbound_applications" ? { ...c, isCompleted: true } : c))
+      );
+    }
   };
 
   const completedCount = cards.filter((c) => c.isCompleted || c.isSkipped).length;
@@ -136,30 +202,43 @@ export default function LandlordSetupActionGrid({
 
   return (
     <div className="space-y-6">
-      {/* Onboarding Progress Card */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 md:p-8 shadow-xs">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[#0F172A] md:text-xl">
-            Finish setting up your accredited residence &amp; application desk
+      
+      {/* Onboarding Progress Card with Fast Action Button */}
+      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 md:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1.5 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+              Provider Setup Tracker
+            </span>
+            <span className="text-xs text-gray-400">
+              {completedCount} of {totalCount} completed ({percentage}%)
+            </span>
+          </div>
+          <h2 className="text-lg font-bold text-[#0F172A] md:text-xl">
+            Accredited Residence Operations Dashboard
           </h2>
-          <p className="text-sm text-[#64748B]">
-            Complete or review these steps to unlock accredited student trust badges and automated lease confirmation
-            dispatch.
+          <p className="text-xs md:text-sm text-[#64748B]">
+            Manage your student properties, track safety compliance scores, and process verified lease confirmations.
           </p>
-        </div>
 
-        <div className="mt-5 space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#64748B]">
+          <div className="pt-2">
             <div className="h-2 w-full max-w-md rounded-full bg-[#E5E7EB] overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#10B981] transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-emerald-600 transition-all duration-500 ease-out"
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="font-medium text-[#64748B] pl-4">
-              {completedCount} of {totalCount} completed
-            </span>
           </div>
+        </div>
+
+        <div className="shrink-0 flex items-center gap-3">
+          <Link
+            href="/landlord/properties/new"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <LuPlus className="w-4 h-4" />
+            <span>Add New Residence</span>
+          </Link>
         </div>
       </div>
 
@@ -168,7 +247,7 @@ export default function LandlordSetupActionGrid({
         {cards.map((card) => (
           <div
             key={card.id}
-            className="flex flex-col justify-between rounded-xl border border-[#E5E7EB] bg-white p-6 min-h-[190px] shadow-xs transition-all hover:border-[#CBD5E1]"
+            className="flex flex-col justify-between rounded-2xl border border-[#E5E7EB] bg-white p-6 min-h-[190px] shadow-xs transition-all hover:border-[#CBD5E1]"
           >
             <div>
               {/* Top Icon & Status Row */}
@@ -186,7 +265,7 @@ export default function LandlordSetupActionGrid({
               <div className="mt-3">
                 <h3
                   className={`text-sm md:text-base font-semibold ${
-                    card.isCompleted ? "text-[#64748B]/80 line-through" : "text-[#0F172A]"
+                    card.isCompleted ? "text-[#64748B]/80 font-bold" : "text-[#0F172A]"
                   }`}
                 >
                   {card.title}
@@ -202,17 +281,17 @@ export default function LandlordSetupActionGrid({
             </div>
 
             {/* Bottom Action Row */}
-            {!card.isCompleted && (
-              <div className="mt-5 flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleAction(card.id)}
-                  className="inline-flex items-center gap-1.5 rounded-[0.5rem] border border-[#E5E7EB] bg-white px-3.5 py-1.5 text-xs font-medium text-[#0F172A] shadow-2xs hover:bg-[#F8FAFC] transition-colors cursor-pointer"
-                >
-                  <span>{card.actionText}</span>
-                  <ArrowRightIcon size={12} />
-                </button>
+            <div className="mt-5 flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={() => handleAction(card.id)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#E5E7EB] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0F172A] shadow-xs hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+              >
+                <span>{card.actionText}</span>
+                <ArrowRightIcon size={12} />
+              </button>
 
+              {!card.isCompleted && (
                 <button
                   type="button"
                   onClick={() => handleSkip(card.id)}
@@ -220,14 +299,14 @@ export default function LandlordSetupActionGrid({
                 >
                   Skip
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Inbound Applications Desk */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-xs space-y-4">
+      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="text-base font-bold text-[#0F172A]">Inbound Student Applications Desk</h3>
@@ -278,13 +357,13 @@ export default function LandlordSetupActionGrid({
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           onClick={() => handleAppDecision(app.id, "ACCEPTED")}
-                          className="px-3 py-1 rounded-[0.5rem] bg-[#059669] hover:bg-[#047857] text-white text-[11px] font-semibold shadow-xs"
+                          className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold shadow-xs cursor-pointer"
                         >
                           Accept &amp; Bind Lease
                         </button>
                         <button
                           onClick={() => handleAppDecision(app.id, "REJECTED")}
-                          className="px-2.5 py-1 rounded-[0.5rem] border border-[#E5E7EB] hover:bg-[#FEF2F2] text-[#DC2626] text-[11px] font-semibold"
+                          className="px-2.5 py-1 rounded-xl border border-[#E5E7EB] hover:bg-rose-50 text-rose-600 text-[11px] font-semibold cursor-pointer"
                         >
                           Decline
                         </button>
@@ -300,8 +379,8 @@ export default function LandlordSetupActionGrid({
         </div>
       </div>
 
-      {/* Interactive Modal */}
-      {activeModal && (
+      {/* Generic Setup Item Modal */}
+      {activeModal && activeModal !== "primary_residence" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-xl">
             <h3 className="text-lg font-bold text-[#0F172A]">
@@ -315,14 +394,14 @@ export default function LandlordSetupActionGrid({
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="rounded-[0.5rem] border border-[#E5E7EB] px-4 py-2 text-xs font-medium text-[#0F172A] hover:bg-[#F8FAFC] cursor-pointer"
+                className="rounded-xl border border-[#E5E7EB] px-4 py-2 text-xs font-medium text-[#0F172A] hover:bg-[#F8FAFC] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleCompleteModal(activeModal)}
-                className="rounded-[0.5rem] bg-gradient-to-br from-[#059669] to-[#10B981] hover:opacity-95 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer"
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer"
               >
                 Mark as Completed
               </button>

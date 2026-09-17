@@ -24,7 +24,7 @@ export default async function LandlordOnboardingPage() {
   });
 
   if (!user) redirect("/landlord/login");
-  if (user.onboardingCompleted) redirect("/landlord/properties");
+  if (user.onboardingCompleted) redirect("/dashboard/landlord");
 
   return <LandlordOnboarding initialUser={user} />;
 }

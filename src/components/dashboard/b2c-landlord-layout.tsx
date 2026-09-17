@@ -15,16 +15,19 @@ import {
   ChevronDownIcon,
   StoreFrontIcon,
 } from "@/components/common/Icons";
+import { LuPlus, LuBuilding2, LuCheck } from "react-icons/lu";
 
 interface B2cLandlordLayoutProps {
   children: React.ReactNode;
   activeTab?: string;
   user?: {
+    id?: string;
     name: string;
     surname: string;
     email: string;
     entityType?: string | null;
   };
+  properties?: any[];
 }
 
 export default function B2cLandlordLayout({
@@ -36,6 +39,7 @@ export default function B2cLandlordLayout({
     email: "landlord@example.com",
     entityType: "Private Residence Operator",
   },
+  properties = [],
 }: B2cLandlordLayoutProps) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -43,11 +47,11 @@ export default function B2cLandlordLayout({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  const properties = [
-    "Braamfontein Student Loft (8 Beds)",
-    "Kingsway Heights Auckland Park (8 Beds)",
-  ];
-  const [currentProperty, setCurrentProperty] = useState(properties[0]);
+  const displayProperties = properties.length > 0
+    ? properties.map((p) => `${p.title} (${p.bedrooms} Beds)`)
+    : ["No residences listed yet"];
+
+  const [currentProperty, setCurrentProperty] = useState(displayProperties[0]);
 
   async function handleLogout() {
     try {
@@ -60,15 +64,14 @@ export default function B2cLandlordLayout({
     }
   }
 
-
   const mainNavItems = [
     { label: "Home", href: "/dashboard/landlord", icon: HomeIcon },
-    { label: "My Residences", href: "/landlord/properties", icon: BuildingIcon, count: 2 },
+    { label: "My Residences", href: "/landlord/properties", icon: BuildingIcon, count: properties.length },
     { label: "Inbound Applicants", href: "/dashboard/landlord#applications", icon: FileTextIcon, count: 2 },
   ];
 
   const complianceNavItems = [
-    { label: "13-Point Safety Audit", href: "/dashboard/landlord#audit", icon: ShieldCheckIcon, badge: "9.2/10" },
+    { label: "13-Point Safety Audit", href: "/dashboard/landlord#audit", icon: ShieldCheckIcon, badge: properties.length > 0 && properties[0].safetyScore ? `${Number(properties[0].safetyScore).toFixed(1)}/10` : undefined },
     { label: "Active Leases", href: "/dashboard/landlord#leases", icon: FileTextIcon },
   ];
 
@@ -125,27 +128,41 @@ export default function B2cLandlordLayout({
 
             {/* Property Dropdown */}
             {!sidebarCollapsed && propertyDropdownOpen && (
-              <div className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-1.5 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">
-                  Select Residence Portfolio
+              <div className="absolute left-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] flex items-center justify-between">
+                  <span>Residence Portfolio</span>
+                  <span className="text-emerald-600">{properties.length} Total</span>
                 </div>
-                {properties.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setCurrentProperty(p);
-                      setPropertyDropdownOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12.5px] text-left transition-colors cursor-pointer ${
-                      currentProperty === p
-                        ? "bg-[#F3F4F6] font-semibold text-black"
-                        : "text-black hover:bg-[#F8FAFC]"
-                    }`}
+                <div className="max-h-48 overflow-y-auto py-1 space-y-0.5">
+                  {displayProperties.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        setCurrentProperty(p);
+                        setPropertyDropdownOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12.5px] text-left transition-colors cursor-pointer ${
+                        currentProperty === p
+                          ? "bg-[#F3F4F6] font-semibold text-black"
+                          : "text-black hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <StoreFrontIcon size={14} className="text-emerald-600 shrink-0" />
+                      <span className="truncate">{p}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-2 mt-1 border-t border-gray-100">
+                  <Link
+                    href="/landlord/properties/new"
+                    onClick={() => setPropertyDropdownOpen(false)}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold py-2 transition-colors cursor-pointer"
                   >
-                    <StoreFrontIcon size={14} className="text-black shrink-0" />
-                    <span className="truncate">{p}</span>
-                  </button>
-                ))}
+                    <LuPlus className="w-3.5 h-3.5" />
+                    <span>+ Add New Residence</span>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -177,8 +194,8 @@ export default function B2cLandlordLayout({
                     <Icon size={17} className="shrink-0 !text-black" />
                     {!sidebarCollapsed && <span>{item.label}</span>}
                   </div>
-                  {!sidebarCollapsed && item.count !== undefined && (
-                    <span className="text-[11px] text-[#64748B] font-bold bg-[#E2E8F0]/60 px-1.5 py-0.2 rounded">
+                  {!sidebarCollapsed && item.count !== undefined && item.count > 0 && (
+                    <span className="text-[11px] text-[#059669] font-bold bg-emerald-50 border border-emerald-100 px-1.5 py-0.2 rounded">
                       {item.count}
                     </span>
                   )}
@@ -268,6 +285,14 @@ export default function B2cLandlordLayout({
 
               {/* Notification Bell + User Profile */}
               <div className="flex items-center gap-3.5 relative">
+                <Link
+                  href="/landlord/properties/new"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                >
+                  <LuPlus className="w-3.5 h-3.5" />
+                  <span>Add Residence</span>
+                </Link>
+
                 <button
                   type="button"
                   className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer"
@@ -290,7 +315,7 @@ export default function B2cLandlordLayout({
                       <span className="text-[13.5px] font-bold text-[#0F172A] tracking-[-0.01em]">
                         {user.name} {user.surname}
                       </span>
-                      <span className="text-[12px] text-[#64748B]">Accredited Landlord</span>
+                      <span className="text-[12px] text-[#64748B]">Accredited Operator</span>
                     </div>
                   </button>
 
@@ -328,4 +353,3 @@ export default function B2cLandlordLayout({
     </div>
   );
 }
-

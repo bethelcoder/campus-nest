@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { STANDARD_CHECKLIST } from "@/lib/safety";
+import { STANDARD_CHECKLIST, calculateSafetyScore } from "@/lib/safety";
 
 // Public browsing — no auth required, per PRD ("Public browsing without
 // login available for listings"). Only VERIFIED properties are shown to
@@ -58,18 +58,34 @@ export async function GET(req: NextRequest) {
 }
 
 const createPropertySchema = z.object({
-  title: z.string().min(1),
-  address: z.string().min(1),
-  suburb: z.string().min(1),
-  city: z.string().min(1),
-  priceMonthly: z.number().positive(),
-  depositAmount: z.number().nonnegative().optional(),
-  bedrooms: z.number().int().positive(),
-  bathrooms: z.number().int().positive().optional(),
-  maxOccupants: z.number().int().positive().optional(),
-  description: z.string().optional(),
+  title: z.string().min(1, "Residence title is required"),
+  address: z.string().min(1, "Street address is required"),
+  suburb: z.string().min(1, "Suburb is required"),
+  city: z.string().min(1, "City is required"),
+  priceMonthly: z.number().positive("Monthly price must be positive"),
+  depositAmount: z.number().nonnegative().optional().nullable(),
+  bedrooms: z.number().int().positive("Bedrooms must be at least 1"),
+  bathrooms: z.number().int().positive().optional().nullable(),
+  maxOccupants: z.number().int().positive().optional().nullable(),
+  description: z.string().optional().nullable(),
   amenities: z.array(z.string()).default([]),
-  distanceToCampus: z.number().nonnegative().optional(),
+  distanceToCampus: z.number().nonnegative().optional().nullable(),
+  images: z.array(z.string()).default([]),
+  checklistAnswers: z.array(
+    z.object({
+      category: z.enum([
+        "SECURITY",
+        "FIRE_SAFETY",
+        "UTILITIES",
+        "BUILDING_STRUCTURE",
+        "LOCATION_RISK",
+      ]),
+      label: z.string(),
+      weight: z.number().int().default(1),
+      passed: z.boolean().nullable(),
+      notes: z.string().optional().nullable(),
+    })
+  ).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -78,30 +94,65 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only landlords can create listings" }, { status: 403 });
   }
 
-  const body = await req.json();
-  const parsed = createPropertySchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+  try {
+    const body = await req.json();
+    const parsed = createPropertySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
 
-  const property = await prisma.property.create({
-    data: {
-      ...parsed.data,
-      landlordId: session.sub,
-      status: "DRAFT",
-      // Every property gets the full standard checklist immediately so the
-      // landlord fills in pass/fail per item rather than the app inventing
-      // a checklist shape on the fly per listing.
-      checklistItems: {
-        create: STANDARD_CHECKLIST.map((item) => ({
-          category: item.category,
-          label: item.label,
-          weight: item.weight,
-        })),
+    const { checklistAnswers, ...propData } = parsed.data;
+
+    let computedScore: number | null = null;
+    let itemsToCreate = STANDARD_CHECKLIST.map((item) => ({
+      category: item.category,
+      label: item.label,
+      weight: item.weight,
+      passed: null as boolean | null,
+      notes: null as string | null,
+    }));
+
+    if (checklistAnswers && checklistAnswers.length > 0) {
+      computedScore = calculateSafetyScore(checklistAnswers);
+      itemsToCreate = checklistAnswers.map((a) => ({
+        category: a.category,
+        label: a.label,
+        weight: a.weight,
+        passed: a.passed,
+        notes: a.notes || null,
+      }));
+    }
+
+    const status = computedScore !== null && computedScore >= 7 ? "VERIFIED" : "PENDING_VERIFICATION";
+
+    const property = await prisma.property.create({
+      data: {
+        title: propData.title,
+        address: propData.address,
+        suburb: propData.suburb,
+        city: propData.city,
+        priceMonthly: propData.priceMonthly,
+        depositAmount: propData.depositAmount || null,
+        bedrooms: propData.bedrooms,
+        bathrooms: propData.bathrooms || null,
+        maxOccupants: propData.maxOccupants || null,
+        description: propData.description || null,
+        amenities: propData.amenities,
+        distanceToCampus: propData.distanceToCampus || null,
+        images: propData.images,
+        safetyScore: computedScore,
+        status,
+        landlordId: session.sub,
+        checklistItems: {
+          create: itemsToCreate,
+        },
       },
-    },
-    include: { checklistItems: true },
-  });
+      include: { checklistItems: true },
+    });
 
-  return NextResponse.json({ property }, { status: 201 });
+    return NextResponse.json({ success: true, property }, { status: 201 });
+  } catch (err: any) {
+    console.error("Create property error:", err);
+    return NextResponse.json({ error: err?.message || "Failed to create residence listing" }, { status: 500 });
+  }
 }

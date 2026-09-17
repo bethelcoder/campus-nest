@@ -1,11 +1,11 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import B2cLandlordLayout from "@/components/dashboard/b2c-landlord-layout";
-import LandlordPropertiesView from "@/components/dashboard/landlord-properties-view";
+import ResidenceBuilderPage from "@/components/dashboard/residence-builder-page";
 
 export const dynamic = "force-dynamic";
 
-export default async function LandlordPropertiesPage() {
+export default async function NewPropertyPage() {
   const session = await getSession();
   if (!session) return null;
 
@@ -16,11 +16,12 @@ export default async function LandlordPropertiesPage() {
     }),
     prisma.property.findMany({
       where: { landlordId: session.sub },
-      include: {
-        checklistItems: true,
-        applications: true,
+      select: {
+        id: true,
+        title: true,
+        bedrooms: true,
+        safetyScore: true,
       },
-      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -34,15 +35,12 @@ export default async function LandlordPropertiesPage() {
 
   const properties = dbProperties.map((p) => ({
     ...p,
-    priceMonthly: Number(p.priceMonthly),
-    depositAmount: p.depositAmount ? Number(p.depositAmount) : null,
-    distanceToCampus: p.distanceToCampus ? Number(p.distanceToCampus) : null,
     safetyScore: p.safetyScore ? Number(p.safetyScore) : null,
   }));
 
   return (
     <B2cLandlordLayout activeTab="My Residences" user={user} properties={properties}>
-      <LandlordPropertiesView initialProperties={properties} user={user} />
+      <ResidenceBuilderPage user={user} />
     </B2cLandlordLayout>
   );
 }
