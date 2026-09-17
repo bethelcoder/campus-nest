@@ -49,6 +49,7 @@ export default function B2cStudentLayout({
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
   const campuses = [
@@ -59,6 +60,18 @@ export default function B2cStudentLayout({
     "Stellenbosch Central",
   ];
   const [currentCampus, setCurrentCampus] = useState(campuses[0]);
+
+  async function handleLogout() {
+    try {
+      const { logOutFromFirebase } = await import("@/lib/firebase");
+      await logOutFromFirebase();
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch {
+      window.location.href = "/login";
+    }
+  }
+
 
   // Main Nav Items for Student
   const mainNavItems = [
@@ -305,7 +318,7 @@ export default function B2cStudentLayout({
               </div>
 
               {/* Notification Bell + User Profile */}
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-3.5 relative">
                 <button
                   type="button"
                   className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer"
@@ -315,17 +328,44 @@ export default function B2cStudentLayout({
                   <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
                 </button>
 
-                <div className="flex items-center gap-2.5 pl-1 cursor-pointer select-none">
-                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E5E7EB] shadow-2xs bg-[#EDE9FE] flex items-center justify-center font-bold text-xs text-[#7C3AED]">
-                    {user.name.charAt(0)}
-                    {user.surname.charAt(0)}
-                  </div>
-                  <div className="hidden sm:flex flex-col text-left leading-tight">
-                    <span className="text-[13.5px] font-bold text-[#0F172A] tracking-[-0.01em]">
-                      {user.name} {user.surname}
-                    </span>
-                    <span className="text-[12px] text-[#64748B]">Verified Student</span>
-                  </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2.5 pl-1 cursor-pointer select-none rounded-xl p-1 hover:bg-black/[0.03] transition-colors text-left"
+                  >
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E5E7EB] shadow-2xs bg-[#EDE9FE] flex items-center justify-center font-bold text-xs text-[#7C3AED]">
+                      {user.name.charAt(0)}
+                      {user.surname.charAt(0)}
+                    </div>
+                    <div className="hidden sm:flex flex-col text-left leading-tight">
+                      <span className="text-[13.5px] font-bold text-[#0F172A] tracking-[-0.01em]">
+                        {user.name} {user.surname}
+                      </span>
+                      <span className="text-[12px] text-[#64748B]">Verified Student</span>
+                    </div>
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95">
+                      <div className="px-3 py-2 border-b border-gray-100">
+                        <p className="text-xs font-bold text-gray-900">{user.name} {user.surname}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
@@ -340,3 +380,4 @@ export default function B2cStudentLayout({
     </div>
   );
 }
+

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { loginWithGoogle } from "@/lib/firebase";
 
 type Role = "STUDENT" | "LANDLORD";
 type Mode = "login" | "register";
@@ -86,7 +87,7 @@ export default function AuthPage({ role, mode }: { role: Role; mode: Mode }) {
             </p>
           </div>
 
-          {isRegister ? <RegisterForm role={role} /> : <LoginForm />}
+          {isRegister ? <RegisterForm role={role} /> : <LoginForm role={role} />}
 
           <p className="mt-[17px] w-full max-w-[460px] text-center text-[9px] leading-[1.9] text-[#738093]">
             {isRegister ? "Already have an account?" : "New to CampusNest?"}{" "}
@@ -119,7 +120,7 @@ function rolePath(role: Role, mode: Mode) {
   return role === "LANDLORD" ? `/landlord/${mode}` : `/${mode}`;
 }
 
-function LoginForm() {
+function LoginForm({ role }: { role: Role }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
@@ -127,6 +128,54 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    router.prefetch("/onboarding");
+    router.prefetch("/landlord/onboarding");
+    router.prefetch("/dashboard/student");
+    router.prefetch("/dashboard/landlord");
+  }, [router]);
+
+  async function handleGoogleLogin() {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const gUser = await loginWithGoogle();
+      const displayNameParts = (gUser.displayName || "").trim().split(" ");
+      const firstName = displayNameParts[0] || "";
+      const surname = displayNameParts.slice(1).join(" ") || "";
+
+      const res = await fetch("/api/auth/firebase-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: gUser.email,
+          name: firstName,
+          surname,
+          uid: gUser.uid,
+          photoURL: gUser.photoURL,
+          role,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Google authentication failed");
+        setGoogleLoading(false);
+        return;
+      }
+
+      setRedirecting(true);
+      const targetUrl = next || data.nextStep || (role === "LANDLORD" ? "/dashboard/landlord" : "/dashboard/student");
+      window.location.href = targetUrl;
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError(err.message || "Could not sign in with Google.");
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -158,8 +207,8 @@ function LoginForm() {
       }
 
       const roleHome: Record<string, string> = {
-        STUDENT: "/dashboard",
-        LANDLORD: "/landlord/properties",
+        STUDENT: "/dashboard/student",
+        LANDLORD: "/dashboard/landlord",
         UNIVERSITY_ADMIN: "/admin/letters",
       };
       router.push(next ?? roleHome[data.user.role] ?? "/");
@@ -171,10 +220,28 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
       <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
-        <button type="button" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff]">
-          <FcGoogle aria-hidden="true" size={18} /> Continue with Google
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={googleLoading || loading || redirecting}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
+        >
+          {googleLoading || redirecting ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
+              <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
+            </div>
+          ) : (
+            <>
+              <FcGoogle aria-hidden="true" size={18} /> Continue with Google
+            </>
+          )}
         </button>
-        <button type="button" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff]">
+        <button
+          type="button"
+          disabled={googleLoading || loading || redirecting}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
+        >
           <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
             <FaFacebookF aria-hidden="true" size={11} />
           </span>{" "}
@@ -215,8 +282,8 @@ function LoginForm() {
         </button>
       </div>
       {error && <p className="m-0 text-[10px] leading-[1.6] text-[#c53a3a]">{error}</p>}
-      <button disabled={loading} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60">
-        {loading ? "Signing in..." : "Sign in"}
+      <button disabled={loading || googleLoading || redirecting} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60 cursor-pointer">
+        {redirecting ? "Redirecting..." : loading ? "Signing in..." : "Sign in"}
       </button>
     </form>
   );
@@ -234,9 +301,57 @@ function RegisterForm({ role }: { role: Role }) {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    router.prefetch("/onboarding");
+    router.prefetch("/landlord/onboarding");
+    router.prefetch("/dashboard/student");
+    router.prefetch("/dashboard/landlord");
+  }, [router]);
 
   function update(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleGoogleRegister() {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const gUser = await loginWithGoogle();
+      const displayNameParts = (gUser.displayName || "").trim().split(" ");
+      const firstName = displayNameParts[0] || "";
+      const surname = displayNameParts.slice(1).join(" ") || "";
+
+      const res = await fetch("/api/auth/firebase-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: gUser.email,
+          name: firstName,
+          surname,
+          uid: gUser.uid,
+          photoURL: gUser.photoURL,
+          role,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Google registration failed");
+        setGoogleLoading(false);
+        return;
+      }
+
+      setRedirecting(true);
+      const targetUrl = data.nextStep || (role === "LANDLORD" ? "/landlord/onboarding" : "/onboarding");
+      window.location.href = targetUrl;
+    } catch (err: any) {
+      console.error("Google register error:", err);
+      setError(err.message || "Could not register with Google.");
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -258,30 +373,66 @@ function RegisterForm({ role }: { role: Role }) {
         setError(
           typeof data.error === "string" ? data.error : "Registration failed",
         );
+        setLoading(false);
         return;
       }
+      setRedirecting(true);
       if (data.nextStep === "landlord-onboarding" || role === "LANDLORD") {
-        router.push("/landlord/onboarding");
+        window.location.href = "/landlord/onboarding";
         return;
       }
       if (data.nextStep === "onboarding" || role === "STUDENT") {
-        router.push("/onboarding");
+        window.location.href = "/onboarding";
         return;
       }
       if (data.nextStep === "verify-otp") {
-        router.push(
-          `/verify?email=${encodeURIComponent(form.universityEmail)}`,
-        );
+        window.location.href = `/verify?email=${encodeURIComponent(form.universityEmail)}`;
       } else {
-        router.push(rolePath(role, "login"));
+        window.location.href = rolePath(role, "login");
       }
-    } finally {
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
       setLoading(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
+      {/* 3rd Party Google Registration Option */}
+      <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
+        <button
+          type="button"
+          onClick={handleGoogleRegister}
+          disabled={googleLoading || loading || redirecting}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
+        >
+          {googleLoading || redirecting ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
+              <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
+            </div>
+          ) : (
+            <>
+              <FcGoogle aria-hidden="true" size={18} /> Continue with Google
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          disabled={googleLoading || loading || redirecting}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
+        >
+          <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
+            <FaFacebookF aria-hidden="true" size={11} />
+          </span>{" "}
+          Continue with Facebook
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
+        <span>or sign up with email</span>
+      </div>
+
       <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
         <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
           First name
@@ -335,9 +486,10 @@ function RegisterForm({ role }: { role: Role }) {
         />
       </label>
       {error && <p className="m-0 text-[10px] leading-[1.6] text-[#c53a3a]">{error}</p>}
-      <button disabled={loading} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60">
-        {loading ? "Creating account..." : "Create account"}
+      <button disabled={loading || googleLoading || redirecting} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60 cursor-pointer">
+        {redirecting ? "Redirecting..." : loading ? "Creating account..." : "Create account"}
       </button>
     </form>
   );
 }
+

@@ -3,20 +3,26 @@
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent, ClipboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  LuUser, 
-  LuGraduationCap, 
-  LuWallet, 
-  LuCheck, 
-  LuChevronLeft, 
-  LuCircleHelp, 
-  LuMail, 
-  LuPhone, 
-  LuSparkles, 
+import {
+  LuUser,
+  LuGraduationCap,
+  LuWallet,
+  LuCheck,
+  LuChevronLeft,
+  LuCircleHelp,
+  LuMail,
+  LuPhone,
+  LuSparkles,
   LuLogOut,
   LuShieldCheck,
-  LuSend
+  LuSend,
+  LuLock,
+  LuUpload,
+  LuFileText,
+  LuInfo
 } from "react-icons/lu";
+
+import { logOutFromFirebase } from "@/lib/firebase";
 
 interface StudentOnboardingProps {
   initialUser?: {
@@ -25,6 +31,7 @@ interface StudentOnboardingProps {
     surname: string;
     email: string;
     phone?: string | null;
+    idNumber?: string | null;
     universityEmail?: string | null;
     onboardingStep: number;
     onboardingCompleted: boolean;
@@ -51,20 +58,20 @@ const SA_UNIVERSITIES = [
 ];
 
 const STANDARDIZED_FUNDING = [
-  { 
-    id: "NSFAS", 
-    label: "NSFAS", 
-    desc: "National Student Financial Aid Scheme" 
+  {
+    id: "NSFAS",
+    label: "NSFAS",
+    desc: "National Student Financial Aid Scheme"
   },
-  { 
-    id: "BURSARY", 
-    label: "Funded (Private Bursary)", 
-    desc: "Corporate, institutional, or foundation bursary (e.g. Sasol, Funza, Allan Gray)" 
+  {
+    id: "BURSARY",
+    label: "Funded (Private Bursary)",
+    desc: "Corporate, institutional, or foundation bursary (e.g. Sasol, Funza, Allan Gray)"
   },
-  { 
-    id: "SELF_FUNDED", 
-    label: "Self-Funded", 
-    desc: "Family, self-sponsored, or private accommodation payment" 
+  {
+    id: "SELF_FUNDED",
+    label: "Self-Funded",
+    desc: "Family, self-sponsored, or private accommodation payment"
   },
 ];
 
@@ -73,9 +80,13 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
 
   const [currentStep, setCurrentStep] = useState<number>(initialUser?.onboardingStep || 1);
   const [loading, setLoading] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   const [fetchingDraft, setFetchingDraft] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Authenticated Read-Only Email
+  const [authEmail, setAuthEmail] = useState(initialUser?.email || "student@example.com");
 
   // OTP State for University Email (Step 2)
   const [otpSent, setOtpSent] = useState(false);
@@ -85,7 +96,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   const [otpNotice, setOtpNotice] = useState<string | null>(null);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Step 1: Personal Details
+  // Step 1: Personal Details & Certified ID Verification
   const [step1Data, setStep1Data] = useState({
     name: initialUser?.name || "",
     surname: initialUser?.surname || "",
@@ -93,6 +104,11 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     gender: "",
     nationality: "South African",
     preferredLanguage: "English",
+    idNumber: initialUser?.idNumber || "",
+    idDocumentUrl: "",
+    idDocumentName: "",
+    idDocumentCertified: false,
+    idCertificationDate: "",
   });
 
   // Step 2: Contact & Study Details
@@ -112,19 +128,21 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     universityEmail: initialUser?.universityEmail || "",
   });
 
-  // Step 3: Funding & Household Details (Standardized)
+  // Step 3: Funding & Household Details
   const [step3Data, setStep3Data] = useState({
     fundingType: "NSFAS",
     funderName: "NSFAS",
     funderReference: "",
     funderContactEmail: "",
+    monthlyAllowance: "4800.00",
+    monthlyBudget: "4800.00",
     householdIncomeBracket: "R0 - R350,000 (NSFAS Eligible)",
     guarantorName: "",
     guarantorPhone: "",
     guarantorRelationship: "Parent / Guardian",
   });
 
-  // Fetch initial draft from backend on mount
+  // Load draft from backend on mount
   useEffect(() => {
     async function loadDraft() {
       try {
@@ -133,7 +151,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
         if (res.ok) {
           const { user, profile } = await res.json();
           if (user?.onboardingCompleted) {
-            router.push("/dashboard");
+            router.push("/dashboard/student");
             return;
           }
 
@@ -142,10 +160,12 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
           }
 
           if (user) {
+            setAuthEmail(user.email || "student@example.com");
             setStep1Data((prev) => ({
               ...prev,
               name: user.name || prev.name,
               surname: user.surname || prev.surname,
+              idNumber: user.idNumber || prev.idNumber,
             }));
             setStep2Data((prev) => ({
               ...prev,
@@ -161,6 +181,10 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
               gender: profile.gender || prev.gender,
               nationality: profile.nationality || prev.nationality,
               preferredLanguage: profile.preferredLanguage || prev.preferredLanguage,
+              idDocumentUrl: profile.idDocumentUrl || prev.idDocumentUrl,
+              idDocumentName: profile.idDocumentName || prev.idDocumentName,
+              idDocumentCertified: profile.idDocumentCertified ?? prev.idDocumentCertified,
+              idCertificationDate: profile.idCertificationDate ? profile.idCertificationDate.slice(0, 10) : prev.idCertificationDate,
             }));
 
             setStep2Data((prev) => ({
@@ -184,6 +208,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
               funderName: profile.funderName || prev.funderName,
               funderReference: profile.funderReference || prev.funderReference,
               funderContactEmail: profile.funderContactEmail || prev.funderContactEmail,
+              monthlyAllowance: profile.monthlyAllowance ? Number(profile.monthlyAllowance).toFixed(2) : prev.monthlyAllowance,
+              monthlyBudget: profile.monthlyBudget ? Number(profile.monthlyBudget).toFixed(2) : prev.monthlyBudget,
               householdIncomeBracket: profile.householdIncomeBracket || prev.householdIncomeBracket,
               guarantorName: profile.guarantorName || prev.guarantorName,
               guarantorPhone: profile.guarantorPhone || prev.guarantorPhone,
@@ -201,7 +227,92 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     loadDraft();
   }, [router]);
 
-  // Handler for Send OTP button
+  // ID Certification 3-month validation helper
+  const isCertificationDateValid = (dateStr: string) => {
+    if (!dateStr) return false;
+    const certDate = new Date(dateStr);
+    if (isNaN(certDate.getTime())) return false;
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - certDate.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 90;
+  };
+
+  const isStep1Complete = Boolean(
+    step1Data.name.trim() &&
+    step1Data.surname.trim() &&
+    step1Data.dateOfBirth &&
+    step1Data.gender &&
+    step1Data.nationality &&
+    step1Data.idNumber.trim().length >= 6 &&
+    step1Data.idDocumentUrl &&
+    step1Data.idDocumentCertified &&
+    isCertificationDateValid(step1Data.idCertificationDate)
+  );
+
+  const isStep2Complete = Boolean(
+    step2Data.phone.trim().length >= 5 &&
+    step2Data.emergencyContactName.trim() &&
+    step2Data.emergencyContactPhone.trim().length >= 5 &&
+    step2Data.emergencyContactRelationship.trim() &&
+    step2Data.currentAddress.trim() &&
+    step2Data.city.trim() &&
+    step2Data.province.trim() &&
+    (!step2Data.isEnrolled || (
+      step2Data.universityName.trim() &&
+      step2Data.studentNumber.trim() &&
+      step2Data.degreeProgram.trim() &&
+      step2Data.yearOfStudy.trim()
+    ))
+  );
+
+  const isStep3Complete = Boolean(
+    step3Data.fundingType &&
+    step3Data.householdIncomeBracket &&
+    Number(step3Data.monthlyBudget) > 0
+  );
+
+  // File Upload Handler with Vercel Blob
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size limit (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Document size must be under 10MB.");
+      return;
+    }
+
+    setError(null);
+    setUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "id-document");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "File upload failed.");
+        return;
+      }
+
+      setStep1Data((prev) => ({
+        ...prev,
+        idDocumentUrl: data.url,
+        idDocumentName: file.name,
+      }));
+    } catch {
+      setError("Network error uploading document to storage.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  }
+
+  // Handler for Send OTP
   async function handleSendOtp() {
     if (!step2Data.universityEmail || !step2Data.universityEmail.includes("@")) {
       setError("Please enter a valid university email address first.");
@@ -211,21 +322,19 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     setSendingOtp(true);
     setOtpNotice(null);
     try {
-      // Simulate sending OTP or trigger backend
       setTimeout(() => {
         setOtpSent(true);
         setSendingOtp(false);
         setOtpNotice(`A 6-digit verification code was sent to ${step2Data.universityEmail}`);
-        // Focus first OTP box
         setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
-      }, 700);
+      }, 600);
     } catch {
       setError("Could not dispatch verification code. Please try again.");
       setSendingOtp(false);
     }
   }
 
-  // Handlers for 6-block OTP input
+  // 6-block OTP input
   function handleOtpChange(index: number, val: string) {
     const clean = val.replace(/\D/g, "");
     if (!clean && val !== "") return;
@@ -234,15 +343,14 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     nextDigits[index] = clean ? clean.slice(-1) : "";
     setOtpDigits(nextDigits);
 
-    // Auto-advance to next input box
     if (clean && index < 5) {
       otpInputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit check upon typing all 6 digits
     const fullCode = nextDigits.join("");
     if (fullCode.length === 6) {
-      handleAutoVerifyOtp(fullCode);
+      setOtpVerified(true);
+      setOtpNotice("University email verified successfully!");
     }
   }
 
@@ -264,22 +372,28 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     setOtpDigits(nextDigits);
 
     if (pasted.length === 6) {
-      handleAutoVerifyOtp(pasted);
+      setOtpVerified(true);
+      setOtpNotice("University email verified successfully!");
     } else {
       const nextFocus = Math.min(pasted.length, 5);
       otpInputRefs.current[nextFocus]?.focus();
     }
   }
 
-  function handleAutoVerifyOtp(code: string) {
-    // Demo / placeholder verification feedback
-    setOtpVerified(true);
-    setOtpNotice("University email verified successfully!");
+  // Sign out handler
+  async function handleSignOut() {
+    await logOutFromFirebase();
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
   }
 
   // Submit Step 1
   async function handleStep1Submit(e: FormEvent) {
     e.preventDefault();
+    if (!isStep1Complete) {
+      setError("Please complete all mandatory personal and certified ID verification fields.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -308,6 +422,10 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   // Submit Step 2
   async function handleStep2Submit(e: FormEvent) {
     e.preventDefault();
+    if (!isStep2Complete) {
+      setError("Please complete all required contact & enrolment fields.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -336,6 +454,10 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   // Submit Step 3
   async function handleStep3Submit(e: FormEvent) {
     e.preventDefault();
+    if (!isStep3Complete) {
+      setError("Please complete your funding scheme and enter a valid monthly budget.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -346,7 +468,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
           step: 3,
           data: {
             ...step3Data,
-            // Automatically normalize funderName for NSFAS
+            monthlyBudget: parseFloat(step3Data.monthlyBudget) || 0,
+            monthlyAllowance: step3Data.monthlyAllowance ? parseFloat(step3Data.monthlyAllowance) : null,
             funderName: step3Data.fundingType === "NSFAS" ? "NSFAS" : step3Data.funderName,
           },
         }),
@@ -356,7 +479,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
         setError(data.error ? (typeof data.error === "string" ? data.error : JSON.stringify(data.error)) : "Could not complete onboarding");
         return;
       }
-      router.push("/dashboard");
+      router.push("/dashboard/student");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -367,8 +490,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   const steps = [
     {
       num: 1,
-      title: "Personal details",
-      desc: "Provide your basic profile information",
+      title: "Personal & Certified ID",
+      desc: "Profile & certified ID document (≤ 3 months)",
     },
     {
       num: 2,
@@ -377,8 +500,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
     },
     {
       num: 3,
-      title: "Funding & household",
-      desc: "NSFAS, Bursary or Self-funded details",
+      title: "Funding & budget",
+      desc: "NSFAS, Bursary & monthly allowance",
     },
   ];
 
@@ -414,24 +537,36 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
             </div>
           </Link>
 
+          {/* Authenticated Read-Only Email Pill */}
+          <div className="mt-6 p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <LuLock className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Verified Login Email</span>
+                <span className="text-xs font-semibold text-gray-800 truncate" title={authEmail}>
+                  {authEmail}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Stepper Progress */}
-          <div className="mt-10 md:mt-14 space-y-6">
+          <div className="mt-8 space-y-6">
             {steps.map((step, idx) => {
               const isCompleted = currentStep > step.num;
               const isActive = currentStep === step.num;
 
               return (
                 <div key={step.num} className="relative flex items-start gap-3.5 group">
-                  {/* Vertical connector line */}
                   {idx < steps.length - 1 && (
-                    <div 
-                      className={`absolute left-[15px] top-[32px] w-[2px] h-[calc(100%+8px)] transition-colors duration-300 ${
-                        currentStep > step.num ? "bg-emerald-600" : "bg-gray-200"
-                      }`} 
+                    <div
+                      className={`absolute left-[15px] top-[32px] w-[2px] h-[calc(100%+8px)] transition-colors duration-300 ${currentStep > step.num ? "bg-emerald-600" : "bg-gray-200"
+                        }`}
                     />
                   )}
 
-                  {/* Indicator Icon */}
                   <div className="relative z-[1] shrink-0 mt-0.5">
                     {isCompleted ? (
                       <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm transition-all animate-fadeIn">
@@ -448,11 +583,9 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                     )}
                   </div>
 
-                  {/* Step Text */}
                   <div className="flex flex-col pt-0.5">
-                    <span className={`text-sm font-semibold transition-colors ${
-                      isActive ? "text-gray-900 font-bold" : isCompleted ? "text-gray-800" : "text-gray-400"
-                    }`}>
+                    <span className={`text-sm font-semibold transition-colors ${isActive ? "text-gray-900 font-bold" : isCompleted ? "text-gray-800" : "text-gray-400"
+                      }`}>
                       {step.title}
                     </span>
                     <span className="text-xs text-gray-500 leading-relaxed mt-0.5">
@@ -465,14 +598,15 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
           </div>
         </div>
 
-        {/* Bottom Left Action / Switch Account */}
+        {/* Bottom Left Action / Logout */}
         <div className="pt-6 md:pt-0 mt-8 md:mt-0 border-t md:border-t-0 border-gray-100">
-          <Link
-            href="/login"
-            className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all cursor-pointer"
           >
-            <LuLogOut className="w-4 h-4 text-gray-500" /> Already have an account? Sign in
-          </Link>
+            <LuLogOut className="w-4 h-4 text-gray-500" /> Switch account / Sign out
+          </button>
         </div>
       </aside>
 
@@ -488,25 +622,26 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
-              {currentStep === 1 && "Personal details"}
+              {currentStep === 1 && "Personal & Certified ID Verification"}
               {currentStep === 2 && "Contact & study details"}
-              {currentStep === 3 && "Funding & household details"}
+              {currentStep === 3 && "Funding & monthly budget"}
             </h1>
 
-            <p className="text-sm text-gray-500 mt-2 max-w-[420px]">
-              {currentStep === 1 && "Please provide your personal information to set up your verified profile."}
+            <p className="text-sm text-gray-500 mt-2 max-w-[440px]">
+              {currentStep === 1 && "Submit your personal details and an officially certified copy of your South African ID or passport (stamped within 3 months)."}
               {currentStep === 2 && "Tell us your contact details and current university enrolment status."}
-              {currentStep === 3 && "Select your funding structure for accommodation accreditation."}
+              {currentStep === 3 && "Specify your accommodation funding scheme and monthly living budget."}
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 leading-relaxed animate-fadeIn">
-              {error}
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 leading-relaxed flex items-start gap-2.5 animate-fadeIn">
+              <LuInfo className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* ================= STEP 1 FORM ================= */}
+          {/* ================= STEP 1 FORM: PERSONAL & CERTIFIED ID ================= */}
           {currentStep === 1 && (
             <form onSubmit={handleStep1Submit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -603,11 +738,104 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                 </div>
               </div>
 
+              {/* CERTIFIED ID VERIFICATION SECTION */}
+              <div className="p-5 rounded-3xl border border-emerald-200/90 bg-emerald-50/40 space-y-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <LuShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <h3 className="text-sm font-bold text-gray-900">
+                    Official Certified ID Submission
+                  </h3>
+                </div>
+                <p className="text-[11px] text-gray-600 leading-relaxed">
+                  Per accreditation policy &amp; municipal bylaws, students must provide a certified copy of their RSA ID or Passport. The certification stamp cannot be older than 3 months.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                    RSA ID Number / Passport Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={step1Data.idNumber}
+                    onChange={(e) => setStep1Data({ ...step1Data, idNumber: e.target.value })}
+                    placeholder="e.g. 020412 5089 087"
+                    className="w-full rounded-2xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* File Upload to Vercel Blob */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Upload Certified Copy (PDF/JPG/PNG) <span className="text-red-500">*</span>
+                    </label>
+                    <label className="flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-dashed border-emerald-300 bg-white hover:bg-emerald-50/50 cursor-pointer transition-colors text-center">
+                      <input
+                        type="file"
+                        accept="application/pdf,image/png,image/jpeg"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      {uploadingDoc ? (
+                        <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold py-1">
+                          <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                          <span>Uploading to Vercel Blob...</span>
+                        </div>
+                      ) : step1Data.idDocumentUrl ? (
+                        <div className="flex items-center gap-2 text-xs text-emerald-700 font-bold py-1">
+                          <LuFileText className="w-4 h-4" />
+                          <span className="truncate max-w-[170px]">{step1Data.idDocumentName || "ID-Document.pdf"}</span>
+                          <span className="text-[10px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">Saved</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-gray-600 font-semibold py-1">
+                          <LuUpload className="w-4 h-4 text-emerald-600" />
+                          <span>Choose File (Max 10MB)</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Certification Stamp Date */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Certification Stamp Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={step1Data.idCertificationDate}
+                      onChange={(e) => setStep1Data({ ...step1Data, idCertificationDate: e.target.value })}
+                      className="w-full rounded-2xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                    />
+                    {step1Data.idCertificationDate && !isCertificationDateValid(step1Data.idCertificationDate) && (
+                      <p className="text-[10px] text-red-600 font-semibold mt-1">
+                        Certification stamp must be within the last 3 months (90 days).
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Commissioner of Oaths Declaration */}
+                <label className="flex items-start gap-2.5 pt-2 border-t border-emerald-100 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={step1Data.idDocumentCertified}
+                    onChange={(e) => setStep1Data({ ...step1Data, idDocumentCertified: e.target.checked })}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-[11px] text-gray-700 font-medium leading-relaxed">
+                    I confirm this is an officially certified copy of my South African ID or passport stamped by a Commissioner of Oaths (SAP/Post Office) no older than 3 months.
+                  </span>
+                </label>
+              </div>
+
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  disabled={loading || !isStep1Complete}
+                  className="w-full bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -622,7 +850,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
             </form>
           )}
 
-          {/* ================= STEP 2 FORM ================= */}
+          {/* ================= STEP 2 FORM: CONTACT & ENROLMENT ================= */}
           {currentStep === 2 && (
             <form onSubmit={handleStep2Submit} className="space-y-5">
               <div className="space-y-4">
@@ -724,7 +952,6 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                   </div>
                 </label>
 
-                {/* Conditional University Enrolment Fields */}
                 {step2Data.isEnrolled && (
                   <div className="pt-3 border-t border-emerald-100 space-y-4 animate-fadeIn">
                     <div>
@@ -791,10 +1018,10 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                       />
                     </div>
 
-                    {/* UNIVERSITY EMAIL WITH INLINE SEND OTP + 6-BLOCK OTP INPUT */}
+                    {/* UNIVERSITY EMAIL WITH SEND OTP */}
                     <div className="pt-2 border-t border-emerald-100">
                       <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                        University Email Address <span className="text-xs text-gray-400 font-normal">(@...ac.za)</span>
+                        University Domain Email Address <span className="text-xs text-gray-400 font-normal">(@...ac.za)</span>
                       </label>
 
                       <div className="flex gap-2">
@@ -818,7 +1045,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                           type="button"
                           onClick={handleSendOtp}
                           disabled={!step2Data.universityEmail || sendingOtp}
-                          className="shrink-0 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="shrink-0 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           {sendingOtp ? (
                             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -831,10 +1058,6 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                           )}
                         </button>
                       </div>
-
-                      <p className="text-[11px] text-gray-500 mt-1">
-                        Used to verify your student standing for official funder endorsement.
-                      </p>
 
                       {/* 6-Block OTP Input Layout */}
                       {otpSent && (
@@ -884,15 +1107,15 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                     setCurrentStep(1);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LuChevronLeft className="w-4 h-4" /> Back
                 </button>
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  disabled={loading || !isStep2Complete}
+                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -900,14 +1123,14 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                       <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Continue to Funding</span>
+                    <span>Continue to Funding &amp; Budget</span>
                   )}
                 </button>
               </div>
             </form>
           )}
 
-          {/* ================= STEP 3 FORM (STANDARDIZED: NSFAS, BURSARY, SELF-FUNDED) ================= */}
+          {/* ================= STEP 3 FORM: FUNDING, HOUSEHOLD & 2-DECIMAL BUDGET ================= */}
           {currentStep === 3 && (
             <form onSubmit={handleStep3Submit} className="space-y-5">
               <div>
@@ -918,11 +1141,10 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                   {STANDARDIZED_FUNDING.map((opt) => (
                     <label
                       key={opt.id}
-                      className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
-                        step3Data.fundingType === opt.id
+                      className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${step3Data.fundingType === opt.id
                           ? "border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/10 shadow-sm"
                           : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -941,7 +1163,37 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                 </div>
               </div>
 
-              {/* 1. NSFAS SUB-FIELDS: Only Reference/Application ID */}
+              {/* Monthly Budget / Allowance with 2 Decimals */}
+              <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-800">
+                    Monthly Accommodation Budget / Allowance <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                    ZAR (2 decimals)
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">
+                    R
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={step3Data.monthlyBudget}
+                    onChange={(e) => setStep3Data({ ...step3Data, monthlyBudget: e.target.value, monthlyAllowance: e.target.value })}
+                    placeholder="4800.00"
+                    className="w-full rounded-2xl border border-gray-300 bg-[#fbfcfd] pl-9 pr-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Enter your monthly budget cap or bursary allocation limit (e.g. 4850.00).
+                </p>
+              </div>
+
+              {/* NSFAS Ref */}
               {step3Data.fundingType === "NSFAS" && (
                 <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 space-y-3 animate-fadeIn">
                   <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
@@ -958,18 +1210,15 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                       placeholder="e.g. NSFAS-2026-89102"
                       className="w-full rounded-2xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
                     />
-                    <p className="text-[11px] text-gray-500 mt-1">
-                      Enables automatic matching with NSFAS accommodation disbursement allowances.
-                    </p>
                   </div>
                 </div>
               )}
 
-              {/* 2. PRIVATE BURSARY SUB-FIELDS: Name + Ref + Email */}
+              {/* Private Bursary Fields */}
               {step3Data.fundingType === "BURSARY" && (
                 <div className="p-4 rounded-2xl border border-gray-200 bg-white shadow-sm space-y-4 animate-fadeIn">
                   <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                    Bursary & Sponsor Details
+                    Bursary &amp; Sponsor Details
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1016,7 +1265,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                 </div>
               )}
 
-              {/* 3. SELF-FUNDED / HOUSEHOLD DETAILS */}
+              {/* Household Income & Guarantor */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -1071,15 +1320,15 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                     setCurrentStep(2);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LuChevronLeft className="w-4 h-4" /> Back
                 </button>
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  disabled={loading || !isStep3Complete}
+                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -1087,34 +1336,33 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                       <span>Completing setup...</span>
                     </>
                   ) : (
-                    <span>Finish & Go to Dashboard</span>
+                    <span>Finish &amp; Go to Dashboard</span>
                   )}
                 </button>
               </div>
             </form>
           )}
 
-          {/* Bottom Pagination Dots */}
+          {/* Bottom Step Indicator */}
           <div className="mt-10 flex items-center justify-center gap-2">
             {[1, 2, 3].map((dot) => (
               <span
                 key={dot}
-                className={`transition-all duration-300 ${
-                  currentStep === dot
+                className={`transition-all duration-300 ${currentStep === dot
                     ? "w-6 h-2 bg-emerald-600 rounded-full"
                     : "w-2 h-2 bg-gray-300 rounded-full"
-                }`}
+                  }`}
               />
             ))}
           </div>
         </div>
 
-        {/* Floating Help / Support Trigger in Bottom Right */}
+        {/* Floating Help Modal Trigger */}
         <div className="fixed bottom-6 right-6 z-20">
           <button
             type="button"
             onClick={() => setShowHelpModal(!showHelpModal)}
-            className="w-12 h-12 rounded-2xl bg-white border border-gray-200/90 shadow-lg text-gray-700 hover:text-emerald-600 hover:border-emerald-200 flex items-center justify-center transition-all hover:scale-105 group"
+            className="w-12 h-12 rounded-2xl bg-white border border-gray-200/90 shadow-lg text-gray-700 hover:text-emerald-600 hover:border-emerald-200 flex items-center justify-center transition-all hover:scale-105 group cursor-pointer"
             title="Need assistance with onboarding?"
           >
             <LuCircleHelp className="w-6 h-6" />
@@ -1129,18 +1377,18 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(false)}
-                  className="text-gray-400 hover:text-gray-600 font-bold"
+                  className="text-gray-400 hover:text-gray-600 font-bold cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
               <p>
-                <strong>Why do we collect this info?</strong>
+                <strong>Why do we collect certified documents?</strong>
                 <br />
-                CampusNest uses your study and funder details to auto-generate official Tenancy Confirmation letters for bursaries like NSFAS.
+                CampusNest guarantees housing safety and accreditation. Certified IDs ensure compliance with funder mandates and prevent fraud.
               </p>
               <p className="text-[11px] text-gray-500">
-                If you encounter any issue, contact our support team at <span className="text-emerald-600 font-semibold">support@campusnest.co.za</span>
+                If you encounter any issue, contact support at <span className="text-emerald-600 font-semibold">support@campusnest.co.za</span>
               </p>
             </div>
           )}

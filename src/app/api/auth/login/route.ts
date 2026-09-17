@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   // distinguishing them lets an attacker enumerate registered emails.
   const genericError = NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
 
-  if (!user) return genericError;
+  if (!user || !user.passwordHash) return genericError;
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) return genericError;
 

@@ -76,7 +76,8 @@ model User {
   idNumber        String?
   email           String    @unique // login email
   phone           String?
-  passwordHash    String
+  passwordHash    String?
+  firebaseUid     String?   @unique
 
   // University verification (students only)
   universityEmail String?   @unique
@@ -102,6 +103,7 @@ model User {
   reportsFiled        SafetyReport[]        @relation("ReportedBy")
 
   @@index([email])
+  @@index([firebaseUid])
   @@index([role])
 }
 
@@ -110,11 +112,15 @@ model StudentProfile {
   userId          String    @unique
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Step 1: Personal Details (minus ID number)
-  dateOfBirth     DateTime?
-  gender          String?
-  nationality     String?
-  preferredLanguage String?
+  // Step 1: Personal Details & Certified ID Verification
+  dateOfBirth          DateTime?
+  gender               String?
+  nationality          String?
+  preferredLanguage    String?
+  idDocumentUrl        String?
+  idDocumentName       String?
+  idDocumentCertified  Boolean   @default(false)
+  idCertificationDate  DateTime?
 
   // Step 2: Contact & Study Details
   emergencyContactName         String?
@@ -136,6 +142,7 @@ model StudentProfile {
   funderReference              String?
   funderContactEmail           String?
   monthlyAllowance             Decimal?
+  monthlyBudget                Decimal?
   householdIncomeBracket       String?
   guarantorName                String?
   guarantorPhone               String?

@@ -3,15 +3,15 @@
 import { useEffect, useState, useMemo, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  LuUser, 
-  LuBuilding2, 
-  LuShieldCheck, 
-  LuCheck, 
-  LuChevronLeft, 
-  LuCircleHelp, 
-  LuPhone, 
-  LuSparkles, 
+import {
+  LuUser,
+  LuBuilding2,
+  LuShieldCheck,
+  LuCheck,
+  LuChevronLeft,
+  LuCircleHelp,
+  LuPhone,
+  LuSparkles,
   LuLogOut,
   LuMapPin,
   LuFileText,
@@ -22,7 +22,9 @@ import {
   LuInfo,
   LuLayers
 } from "react-icons/lu";
+
 import { STANDARD_CHECKLIST, calculateSafetyScore, type ChecklistTemplateItem } from "@/lib/safety";
+import { logOutFromFirebase } from "@/lib/firebase";
 
 interface LandlordOnboardingProps {
   initialUser?: {
@@ -92,6 +94,9 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
   const [error, setError] = useState<string | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
+  // Authenticated Read-Only Email
+  const [authEmail, setAuthEmail] = useState(initialUser?.email || "landlord@example.com");
+
   // Step 1: Personal & Business Identity
   const [step1Data, setStep1Data] = useState({
     name: initialUser?.name || "",
@@ -122,17 +127,17 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
       category: item.category,
       label: item.label,
       weight: item.weight,
-      passed: true, // Default to true so landlords can toggle items
+      passed: true,
       notes: "",
     }))
   );
 
-  // Computed Live Safety Score
+  // Live Safety Score
   const liveSafetyScore = useMemo(() => {
     return calculateSafetyScore(checklistAnswers);
   }, [checklistAnswers]);
 
-  // Fetch initial draft from backend on mount
+  // Load draft on mount
   useEffect(() => {
     async function loadDraft() {
       try {
@@ -141,7 +146,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
         if (res.ok) {
           const { user, profile } = await res.json();
           if (user?.onboardingCompleted) {
-            router.push("/landlord/properties");
+            router.push("/dashboard/landlord");
             return;
           }
 
@@ -150,6 +155,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
           }
 
           if (user) {
+            setAuthEmail(user.email || "landlord@example.com");
             setStep1Data((prev) => ({
               ...prev,
               name: user.name || prev.name,
@@ -191,6 +197,22 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     loadDraft();
   }, [router]);
 
+  const isStep1Complete = Boolean(
+    step1Data.name.trim() &&
+    step1Data.surname.trim() &&
+    step1Data.phone.trim().length >= 5 &&
+    step1Data.entityType
+  );
+
+  const isStep2Complete = Boolean(
+    step2Data.draftResidenceName.trim() &&
+    step2Data.draftAddress.trim() &&
+    step2Data.draftSuburb.trim() &&
+    step2Data.draftCity.trim() &&
+    Number(step2Data.draftBedrooms) >= 1 &&
+    Number(step2Data.draftPriceMonthly) > 0
+  );
+
   function toggleAmenity(id: string) {
     setStep2Data((prev) => ({
       ...prev,
@@ -208,9 +230,20 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     });
   }
 
+  // Logout handler
+  async function handleSignOut() {
+    await logOutFromFirebase();
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/landlord/login");
+  }
+
   // Step 1 Submit
   async function handleStep1Submit(e: FormEvent) {
     e.preventDefault();
+    if (!isStep1Complete) {
+      setError("Please fill in all mandatory identity and contact fields.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -239,6 +272,10 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
   // Step 2 Submit
   async function handleStep2Submit(e: FormEvent) {
     e.preventDefault();
+    if (!isStep2Complete) {
+      setError("Please provide your primary residence name, address, bedrooms, and rental rate.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -269,7 +306,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     }
   }
 
-  // Step 3 Submit (Create Property & Complete)
+  // Step 3 Submit
   async function handleStep3Submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -290,7 +327,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
         setError(data.error ? (typeof data.error === "string" ? data.error : JSON.stringify(data.error)) : "Could not complete accreditation");
         return;
       }
-      router.push("/landlord/properties");
+      router.push("/dashboard/landlord");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -302,12 +339,12 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     {
       num: 1,
       title: "Personal & Business",
-      desc: "Identity & company registration",
+      desc: "Identity & operating credentials",
     },
     {
       num: 2,
       title: "Residence Details",
-      desc: "Property name, address & amenities",
+      desc: "Property name, location & pricing",
     },
     {
       num: 3,
@@ -327,7 +364,6 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     );
   }
 
-  // Group checklist items by category for Step 3
   const checklistByCategory = checklistAnswers.reduce<Record<string, Array<{ item: ChecklistAnswerState; index: number }>>>(
     (acc, item, index) => {
       acc[item.category] = acc[item.category] ?? [];
@@ -355,24 +391,36 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
             </div>
           </Link>
 
+          {/* Authenticated Read-Only Email Pill */}
+          <div className="mt-6 p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <LuLock className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Verified Login Email</span>
+                <span className="text-xs font-semibold text-gray-800 truncate" title={authEmail}>
+                  {authEmail}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Stepper Progress */}
-          <div className="mt-10 md:mt-14 space-y-6">
+          <div className="mt-8 space-y-6">
             {steps.map((step, idx) => {
               const isCompleted = currentStep > step.num;
               const isActive = currentStep === step.num;
 
               return (
                 <div key={step.num} className="relative flex items-start gap-3.5 group">
-                  {/* Vertical connector line */}
                   {idx < steps.length - 1 && (
-                    <div 
-                      className={`absolute left-[15px] top-[32px] w-[2px] h-[calc(100%+8px)] transition-colors duration-300 ${
-                        currentStep > step.num ? "bg-emerald-600" : "bg-gray-200"
-                      }`} 
+                    <div
+                      className={`absolute left-[15px] top-[32px] w-[2px] h-[calc(100%+8px)] transition-colors duration-300 ${currentStep > step.num ? "bg-emerald-600" : "bg-gray-200"
+                        }`}
                     />
                   )}
 
-                  {/* Indicator Icon */}
                   <div className="relative z-[1] shrink-0 mt-0.5">
                     {isCompleted ? (
                       <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm transition-all animate-fadeIn">
@@ -389,11 +437,9 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                     )}
                   </div>
 
-                  {/* Step Text */}
                   <div className="flex flex-col pt-0.5">
-                    <span className={`text-sm font-semibold transition-colors ${
-                      isActive ? "text-gray-900 font-bold" : isCompleted ? "text-gray-800" : "text-gray-400"
-                    }`}>
+                    <span className={`text-sm font-semibold transition-colors ${isActive ? "text-gray-900 font-bold" : isCompleted ? "text-gray-800" : "text-gray-400"
+                      }`}>
                       {step.title}
                     </span>
                     <span className="text-xs text-gray-500 leading-relaxed mt-0.5">
@@ -406,14 +452,15 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
           </div>
         </div>
 
-        {/* Bottom Left Action / Switch to Student */}
+        {/* Bottom Left Action / Switch Account */}
         <div className="pt-6 md:pt-0 mt-8 md:mt-0 border-t md:border-t-0 border-gray-100">
-          <Link
-            href="/login"
-            className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all cursor-pointer"
           >
-            <LuLogOut className="w-4 h-4 text-gray-500" /> Looking for housing? Student sign in
-          </Link>
+            <LuLogOut className="w-4 h-4 text-gray-500" /> Switch account / Sign out
+          </button>
         </div>
       </aside>
 
@@ -442,8 +489,9 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 leading-relaxed animate-fadeIn">
-              {error}
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 leading-relaxed flex items-start gap-2.5 animate-fadeIn">
+              <LuInfo className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -522,11 +570,10 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                   ].map((opt) => (
                     <label
                       key={opt.id}
-                      className={`flex flex-col justify-between p-3.5 rounded-2xl border cursor-pointer transition-all text-left ${
-                        step1Data.entityType === opt.id
+                      className={`flex flex-col justify-between p-3.5 rounded-2xl border cursor-pointer transition-all text-left ${step1Data.entityType === opt.id
                           ? "border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/10 shadow-sm"
                           : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -582,8 +629,8 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  disabled={loading || !isStep1Complete}
+                  className="w-full bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -713,11 +760,11 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                   <input
                     required
                     type="number"
-                    min="1000"
-                    step="100"
+                    min="100"
+                    step="0.01"
                     value={step2Data.draftPriceMonthly}
                     onChange={(e) => setStep2Data({ ...step2Data, draftPriceMonthly: e.target.value })}
-                    placeholder="e.g. 4800"
+                    placeholder="e.g. 4800.00"
                     className="w-full rounded-2xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
                   />
                 </div>
@@ -736,11 +783,10 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                         key={amenity.id}
                         type="button"
                         onClick={() => toggleAmenity(amenity.id)}
-                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl border text-left text-xs font-semibold transition-all ${
-                          selected
+                        className={`flex items-center gap-2.5 p-2.5 rounded-2xl border text-left text-xs font-semibold transition-all cursor-pointer ${selected
                             ? "border-emerald-600 bg-emerald-50 text-emerald-900 shadow-sm"
                             : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <span className="text-base">{amenity.icon}</span>
                         <span className="flex-1">{amenity.label}</span>
@@ -758,15 +804,15 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                     setCurrentStep(1);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LuChevronLeft className="w-4 h-4" /> Back
                 </button>
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  disabled={loading || !isStep2Complete}
+                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -781,7 +827,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
             </form>
           )}
 
-          {/* ================= STEP 3 FORM (13-POINT SAFETY CHECKLIST WITH LIVE SCORE) ================= */}
+          {/* ================= STEP 3 FORM (13-POINT SAFETY CHECKLIST) ================= */}
           {currentStep === 3 && (
             <form onSubmit={handleStep3Submit} className="space-y-6">
               {/* Live Safety Score Gauge Header */}
@@ -828,16 +874,14 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                             <span className="text-[10px] text-gray-600 font-medium">Weight: {item.weight}x</span>
                           </div>
 
-                          {/* Pass / Fail Toggle Controls */}
                           <div className="flex items-center gap-2 shrink-0">
                             <button
                               type="button"
                               onClick={() => setChecklistAnswer(index, true)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                                item.passed === true
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${item.passed === true
                                   ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20"
                                   : "bg-white border border-gray-300 text-gray-600 hover:bg-emerald-50"
-                              }`}
+                                }`}
                             >
                               <LuCheck className="w-3.5 h-3.5" /> Pass
                             </button>
@@ -845,11 +889,10 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                             <button
                               type="button"
                               onClick={() => setChecklistAnswer(index, false)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                                item.passed === false
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${item.passed === false
                                   ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-500/20"
                                   : "bg-white border border-gray-300 text-gray-600 hover:bg-rose-50"
-                              }`}
+                                }`}
                             >
                               ✕ Fail
                             </button>
@@ -868,7 +911,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                     setCurrentStep(2);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 px-4 rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-700 shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LuChevronLeft className="w-4 h-4" /> Back
                 </button>
@@ -876,7 +919,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-2/3 bg-[#099250] hover:bg-[#087a43] text-white font-semibold py-3 px-5 rounded-2xl shadow-sm hover:shadow text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -896,11 +939,10 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
             {[1, 2, 3].map((dot) => (
               <span
                 key={dot}
-                className={`transition-all duration-300 ${
-                  currentStep === dot
+                className={`transition-all duration-300 ${currentStep === dot
                     ? "w-6 h-2 bg-emerald-600 rounded-full"
                     : "w-2 h-2 bg-gray-300 rounded-full"
-                }`}
+                  }`}
               />
             ))}
           </div>
@@ -911,7 +953,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
           <button
             type="button"
             onClick={() => setShowHelpModal(!showHelpModal)}
-            className="w-12 h-12 rounded-2xl bg-white border border-gray-200/90 shadow-lg text-gray-700 hover:text-emerald-600 hover:border-emerald-200 flex items-center justify-center transition-all hover:scale-105 group"
+            className="w-12 h-12 rounded-2xl bg-white border border-gray-200/90 shadow-lg text-gray-700 hover:text-emerald-600 hover:border-emerald-200 flex items-center justify-center transition-all hover:scale-105 group cursor-pointer"
             title="Need assistance with landlord onboarding?"
           >
             <LuCircleHelp className="w-6 h-6" />
@@ -926,7 +968,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(false)}
-                  className="text-gray-400 hover:text-gray-600 font-bold"
+                  className="text-gray-400 hover:text-gray-600 font-bold cursor-pointer"
                 >
                   ✕
                 </button>
