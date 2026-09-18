@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DashedCircleIcon,
   CompletedCheckIcon,
@@ -11,6 +12,8 @@ import {
   FileTextIcon,
 } from "@/components/common/Icons";
 
+import FavoriteButton from "@/app/properties/favorite-button";
+
 export interface SetupCardItem {
   id: string;
   title: string;
@@ -18,6 +21,17 @@ export interface SetupCardItem {
   actionText: string;
   isCompleted?: boolean;
   isSkipped?: boolean;
+}
+
+export interface ResidenceQueueItem {
+  id: string;
+  name: string;
+  suburb: string;
+  distance?: string;
+  rate: string;
+  safetyScore: string;
+  landlord: string;
+  isSaved?: boolean;
 }
 
 interface StudentSetupActionGridProps {
@@ -29,6 +43,7 @@ interface StudentSetupActionGridProps {
     universityName?: string | null;
     fundingType?: string | null;
   };
+  residences?: ResidenceQueueItem[];
 }
 
 export default function StudentSetupActionGrid({
@@ -40,7 +55,11 @@ export default function StudentSetupActionGrid({
     universityName: "University of the Witwatersrand (Wits)",
     fundingType: "NSFAS",
   },
+  residences,
 }: StudentSetupActionGridProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [cards, setCards] = useState<SetupCardItem[]>([
     {
       id: "university_domain",
@@ -96,8 +115,9 @@ export default function StudentSetupActionGrid({
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
   const [applicationSent, setApplicationSent] = useState(false);
   const [coverNote, setCoverNote] = useState("");
+  const [appliedDuration, setAppliedDuration] = useState("10 Months (Feb - Nov Academic Year)");
 
-  const targetResidences = [
+  const targetResidences: ResidenceQueueItem[] = residences && residences.length > 0 ? residences : [
     {
       id: "RES-101",
       name: "Braamfontein Student Loft",
@@ -106,6 +126,7 @@ export default function StudentSetupActionGrid({
       rate: "R 4,800/mo",
       safetyScore: "9.2/10 (Grade A)",
       landlord: "Sipho Dlamini",
+      isSaved: false,
     },
     {
       id: "RES-102",
@@ -115,6 +136,7 @@ export default function StudentSetupActionGrid({
       rate: "R 4,500/mo",
       safetyScore: "9.0/10 (Grade A)",
       landlord: "Apex Student Living",
+      isSaved: false,
     },
     {
       id: "RES-103",
@@ -124,12 +146,13 @@ export default function StudentSetupActionGrid({
       rate: "R 5,200/mo",
       safetyScore: "9.4/10 (Grade A)",
       landlord: "South Point REIT",
+      isSaved: false,
     },
   ];
 
   const handleAction = (id: string) => {
     if (id === "browse_residences") {
-      window.location.href = "/properties";
+      router.push("/properties");
       return;
     }
     setActiveModal(id);
@@ -150,15 +173,36 @@ export default function StudentSetupActionGrid({
     setApplicationSent(false);
   };
 
-  const handleConfirmApplication = () => {
-    setApplicationSent(true);
-    setTimeout(() => {
+  const handleConfirmApplication = async () => {
+    if (!selectedProperty || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId: selectedProperty.id,
+          duration: appliedDuration,
+          message: coverNote || "Single profile accredited housing application.",
+        }),
+      });
+
+      setApplicationSent(true);
       setCards((prev) =>
         prev.map((c) => (c.id === "single_application" ? { ...c, isCompleted: true } : c))
       );
-      setActiveModal(null);
-      setApplicationSent(false);
-    }, 1800);
+
+      setTimeout(() => {
+        startTransition(() => {
+          router.push("/dashboard/student/applications");
+          router.refresh();
+        });
+      }, 800);
+    } catch {
+      setApplicationSent(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const completedCount = cards.filter((c) => c.isCompleted || c.isSkipped).length;
@@ -283,6 +327,7 @@ export default function StudentSetupActionGrid({
                 <th className="py-3 px-3">Location &amp; Distance</th>
                 <th className="py-3 px-3">Safety Rating</th>
                 <th className="py-3 px-3">Monthly Rent</th>
+                <th className="py-3 px-3 text-center">Save Favorite</th>
                 <th className="py-3 px-3 text-right">Action</th>
               </tr>
             </thead>
@@ -295,7 +340,7 @@ export default function StudentSetupActionGrid({
                   </td>
                   <td className="py-3.5 px-3">
                     <div>{res.suburb}</div>
-                    <div className="text-[11px] text-[#6366F1]">{res.distance}</div>
+                    {res.distance && <div className="text-[11px] text-[#6366F1]">{res.distance}</div>}
                   </td>
                   <td className="py-3.5 px-3">
                     <span className="inline-flex items-center gap-1 font-bold text-[#10B981] bg-[#ECFDF5] px-2 py-0.5 rounded-full text-[11px]">
@@ -303,6 +348,11 @@ export default function StudentSetupActionGrid({
                     </span>
                   </td>
                   <td className="py-3.5 px-3 font-extrabold text-[#0F172A]">{res.rate}</td>
+                  <td className="py-3.5 px-3 text-center">
+                    <div className="inline-flex items-center justify-center">
+                      <FavoriteButton propertyId={res.id} initialSaved={Boolean(res.isSaved)} />
+                    </div>
+                  </td>
                   <td className="py-3.5 px-3 text-right">
                     <button
                       onClick={() => handleApplyToProperty(res)}
@@ -354,6 +404,20 @@ export default function StudentSetupActionGrid({
                 </div>
 
                 <div className="space-y-1.5">
+                  <label className="font-semibold text-[#0F172A]">Lease Duration / Period</label>
+                  <select
+                    value={appliedDuration}
+                    onChange={(e) => setAppliedDuration(e.target.value)}
+                    className="w-full text-xs rounded-xl border border-[#E5E7EB] p-2.5 focus:outline-none focus:border-[#7C3AED] bg-white font-medium text-[#0F172A]"
+                  >
+                    <option value="10 Months (Feb - Nov Academic Year)">10 Months (Feb - Nov Academic Year)</option>
+                    <option value="12 Months (Full Calendar Year Jan - Dec)">12 Months (Full Calendar Year Jan - Dec)</option>
+                    <option value="6 Months (Semester 1 Feb - Jul)">6 Months (Semester 1 Feb - Jul)</option>
+                    <option value="6 Months (Semester 2 Jul - Dec)">6 Months (Semester 2 Jul - Dec)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
                   <label className="font-semibold text-[#0F172A]">Cover Note for Landlord (Optional)</label>
                   <textarea
                     rows={2}
@@ -374,10 +438,21 @@ export default function StudentSetupActionGrid({
                   </button>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={handleConfirmApplication}
-                    className="rounded-[0.5rem] bg-gradient-to-br from-[#7C3AED] to-[#9333EA] hover:opacity-95 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer"
+                    className="rounded-[0.5rem] bg-gradient-to-br from-[#7C3AED] to-[#9333EA] hover:opacity-95 disabled:opacity-60 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    Submit Verified Application
+                    {isSubmitting ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        <span>Dispatching...</span>
+                      </>
+                    ) : (
+                      <span>Submit Verified Application</span>
+                    )}
                   </button>
                 </div>
               </div>

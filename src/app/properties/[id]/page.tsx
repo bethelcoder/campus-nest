@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
+import FavoriteButton from "../favorite-button";
+import ApplyButton from "../apply-button";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +15,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
+  const session = await getSession();
   const property = await prisma.property.findUnique({
     where: { id: params.id },
-    include: { checklistItems: true, landlord: { select: { name: true, surname: true } } },
+    include: {
+      checklistItems: true,
+      landlord: { select: { name: true, surname: true } },
+      favorites: session?.sub ? { where: { studentId: session.sub }, select: { id: true } } : false,
+      applications: session?.sub ? { where: { studentId: session.sub }, select: { id: true } } : false,
+    },
   });
 
   if (!property) notFound();
+
+  const isSaved = Boolean(session?.sub && property.favorites && property.favorites.length > 0);
+  const hasApplied = Boolean(session?.sub && property.applications && property.applications.length > 0);
 
   const byCategory = property.checklistItems.reduce<Record<string, typeof property.checklistItems>>(
     (acc, item) => {
@@ -30,17 +42,30 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-10">
-      <div className="flex items-start justify-between mb-2">
-        <h1 className="text-2xl font-bold">{property.title}</h1>
-        {property.safetyScore !== null && (
-          <span className="text-sm font-semibold px-3 py-1 rounded bg-safe/10 text-safe">
-            Safety Score: {Number(property.safetyScore).toFixed(1)}/10
-          </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-[#0F172A]">{property.title}</h1>
+            {property.safetyScore !== null && (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Safety Score: {Number(property.safetyScore).toFixed(1)}/10
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-[#64748B] mt-1">
+            {property.address}, {property.suburb}, {property.city}
+          </p>
+        </div>
+
+        {session?.role === "STUDENT" && (
+          <div className="flex items-center gap-2">
+            <FavoriteButton propertyId={property.id} initialSaved={isSaved} variant="button" />
+            <div className="w-32">
+              <ApplyButton propertyId={property.id} hasApplied={hasApplied} />
+            </div>
+          </div>
         )}
       </div>
-      <p className="text-gray-600 mb-6">
-        {property.address}, {property.suburb}, {property.city}
-      </p>
 
       <div className="grid grid-cols-3 gap-4 mb-8 text-sm">
         <div className="border rounded p-3">

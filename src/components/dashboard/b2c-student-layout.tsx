@@ -22,6 +22,8 @@ import {
 interface B2cStudentLayoutProps {
   children: React.ReactNode;
   activeTab?: string;
+  savedCount?: number;
+  applicationsCount?: number;
   user?: {
     name: string;
     surname: string;
@@ -36,6 +38,8 @@ interface B2cStudentLayoutProps {
 export default function B2cStudentLayout({
   children,
   activeTab = "Home",
+  savedCount,
+  applicationsCount,
   user = {
     name: "Lerato",
     surname: "Nkosi",
@@ -77,8 +81,8 @@ export default function B2cStudentLayout({
   const mainNavItems = [
     { label: "Home", href: "/dashboard/student", icon: HomeIcon },
     { label: "Accredited Residences", href: "/properties", icon: BuildingIcon },
-    { label: "My Applications", href: "/dashboard/student#applications", icon: FileTextIcon, count: 0 },
-    { label: "Saved Favorites", href: "/dashboard/student#saved", icon: BookmarkIcon, count: 0 },
+    { label: "My Applications", href: "/dashboard/student/applications", icon: FileTextIcon, count: applicationsCount !== undefined ? applicationsCount : 0 },
+    { label: "Saved Favorites", href: "/dashboard/student/saved", icon: BookmarkIcon, count: savedCount !== undefined ? savedCount : 0 },
   ];
 
   const complianceNavItems = [

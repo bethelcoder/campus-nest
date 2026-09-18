@@ -8,6 +8,12 @@ const optionalAmount = z.preprocess(
   z.coerce.number().nonnegative().optional()
 );
 
+const emergencyContactSchema = z.object({
+  name: z.string().trim().min(1),
+  phone: z.string().trim().min(5),
+  relationship: z.string().trim().min(1),
+});
+
 const profileSchema = z.object({
   name: z.string().trim().min(1),
   surname: z.string().trim().min(1),
@@ -20,9 +26,7 @@ const profileSchema = z.object({
   emergencyContactName: z.string().trim().optional().or(z.literal("")),
   emergencyContactPhone: z.string().trim().optional().or(z.literal("")),
   emergencyContactRelationship: z.string().trim().optional().or(z.literal("")),
-  emergencyContact2Name: z.string().trim().optional().or(z.literal("")),
-  emergencyContact2Phone: z.string().trim().optional().or(z.literal("")),
-  emergencyContact2Relationship: z.string().trim().optional().or(z.literal("")),
+  emergencyContacts: z.array(emergencyContactSchema).default([]),
   currentAddress: z.string().trim().optional().or(z.literal("")),
   city: z.string().trim().optional().or(z.literal("")),
   province: z.string().trim().optional().or(z.literal("")),
@@ -74,6 +78,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 });
   }
 
+  const emergencyContacts = data.emergencyContacts.filter(
+    (contact) => contact.name || contact.phone || contact.relationship
+  );
+
   const [user] = await prisma.$transaction([
     prisma.user.update({
       where: { id: session.sub },
@@ -96,9 +104,7 @@ export async function PATCH(req: NextRequest) {
         emergencyContactName: data.emergencyContactName || null,
         emergencyContactPhone: data.emergencyContactPhone || null,
         emergencyContactRelationship: data.emergencyContactRelationship || null,
-        emergencyContact2Name: data.emergencyContact2Name || null,
-        emergencyContact2Phone: data.emergencyContact2Phone || null,
-        emergencyContact2Relationship: data.emergencyContact2Relationship || null,
+        emergencyContacts,
         currentAddress: data.currentAddress || null,
         city: data.city || null,
         province: data.province || null,
@@ -125,9 +131,7 @@ export async function PATCH(req: NextRequest) {
         emergencyContactName: data.emergencyContactName || null,
         emergencyContactPhone: data.emergencyContactPhone || null,
         emergencyContactRelationship: data.emergencyContactRelationship || null,
-        emergencyContact2Name: data.emergencyContact2Name || null,
-        emergencyContact2Phone: data.emergencyContact2Phone || null,
-        emergencyContact2Relationship: data.emergencyContact2Relationship || null,
+        emergencyContacts,
         currentAddress: data.currentAddress || null,
         city: data.city || null,
         province: data.province || null,

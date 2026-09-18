@@ -99,6 +99,7 @@ model User {
 
   properties          Property[]           @relation("LandlordProperties")
   applications        Application[]
+  favorites           Favorite[]
   tenancies           Tenancy[]
   confirmationLetters ConfirmationLetter[]  @relation("StudentLetters")
   endorsedLetters      ConfirmationLetter[] @relation("EndorsingAdmin")
@@ -129,9 +130,7 @@ model StudentProfile {
   emergencyContactName         String?
   emergencyContactPhone        String?
   emergencyContactRelationship String?
-  emergencyContact2Name         String?
-  emergencyContact2Phone        String?
-  emergencyContact2Relationship String?
+  emergencyContacts             Json?
   currentAddress               String?
   city                         String?
   province                     String?
@@ -217,7 +216,9 @@ model Property {
   updatedAt DateTime @updatedAt
 
   checklistItems ChecklistItem[]
+  roomListings   RoomListing[]
   applications   Application[]
+  favorites      Favorite[]
   tenancies      Tenancy[]
   reports        SafetyReport[]
   funderLetterRequests FunderLetterRequest[]
@@ -226,6 +227,19 @@ model Property {
   @@index([status])
   @@index([priceMonthly])
   @@index([safetyScore])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([studentId, propertyId])
+  @@index([studentId])
+  @@index([propertyId])
 }
 
 // One row per checklist question. A property is seeded with the standard
@@ -246,12 +260,32 @@ model ChecklistItem {
   @@index([category])
 }
 
+model RoomListing {
+  id             String   @id @default(cuid())
+  propertyId     String
+  property       Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name           String
+  roomType       String
+  description    String?
+  monthlyRent    Decimal
+  availableUnits Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  applications Application[]
+  tenancies    Tenancy[]
+
+  @@index([propertyId])
+}
+
 model Application {
   id         String            @id @default(cuid())
   studentId  String
   student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
   propertyId String
   property   Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomListingId String?
+  roomListing RoomListing?      @relation(fields: [roomListingId], references: [id], onDelete: Restrict)
   message    String?
   status     ApplicationStatus @default(PENDING)
   createdAt  DateTime          @default(now())
@@ -291,6 +325,8 @@ model Tenancy {
   student    User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   propertyId String
   property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomListingId String?
+  roomListing RoomListing?  @relation(fields: [roomListingId], references: [id], onDelete: SetNull)
   startDate  DateTime
   endDate    DateTime?
   status     TenancyStatus @default(PENDING)

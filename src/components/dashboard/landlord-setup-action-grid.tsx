@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -45,8 +45,10 @@ export default function LandlordSetupActionGrid({
   initialApplications = [],
 }: LandlordSetupActionGridProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [properties, setProperties] = useState<any[]>(initialProperties);
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [applications, setApplications] = useState<any[]>(
     initialApplications.length > 0
@@ -186,6 +188,7 @@ export default function LandlordSetupActionGrid({
   };
 
   const handleAppDecision = async (id: string, decision: "ACCEPTED" | "REJECTED") => {
+    setProcessingId(id);
     setApplications((prev) =>
       prev.map((app) => (app.id === id ? { ...app, status: decision } : app))
     );
@@ -193,6 +196,23 @@ export default function LandlordSetupActionGrid({
       setCards((prev) =>
         prev.map((c) => (c.id === "inbound_applications" ? { ...c, isCompleted: true } : c))
       );
+    }
+
+    try {
+      const res = await fetch("/api/landlord/applications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId: id, status: decision }),
+      });
+      if (res.ok) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update application status:", err);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -356,14 +376,26 @@ export default function LandlordSetupActionGrid({
                     {app.status === "PENDING" ? (
                       <div className="inline-flex items-center gap-1.5">
                         <button
+                          disabled={processingId === app.id}
                           onClick={() => handleAppDecision(app.id, "ACCEPTED")}
-                          className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold shadow-xs cursor-pointer"
+                          className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-[11px] font-semibold shadow-xs cursor-pointer inline-flex items-center gap-1 transition-all"
                         >
-                          Accept &amp; Bind Lease
+                          {processingId === app.id ? (
+                            <>
+                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <span>Accept &amp; Bind Lease</span>
+                          )}
                         </button>
                         <button
+                          disabled={processingId === app.id}
                           onClick={() => handleAppDecision(app.id, "REJECTED")}
-                          className="px-2.5 py-1 rounded-xl border border-[#E5E7EB] hover:bg-rose-50 text-rose-600 text-[11px] font-semibold cursor-pointer"
+                          className="px-2.5 py-1 rounded-xl border border-[#E5E7EB] hover:bg-rose-50 text-rose-600 disabled:opacity-60 text-[11px] font-semibold cursor-pointer transition-all"
                         >
                           Decline
                         </button>

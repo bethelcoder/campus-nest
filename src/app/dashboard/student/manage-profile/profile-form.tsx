@@ -22,9 +22,6 @@ const fields = [
   ["emergencyContactName", "Emergency contact name"],
   ["emergencyContactPhone", "Emergency contact phone"],
   ["emergencyContactRelationship", "Emergency contact relationship"],
-  ["emergencyContact2Name", "Second contact name"],
-  ["emergencyContact2Phone", "Second contact phone"],
-  ["emergencyContact2Relationship", "Second contact relationship"],
   ["fundingType", "Funding scheme"],
   ["funderName", "Funder name"],
   ["funderReference", "Funder reference"],
@@ -37,9 +34,19 @@ const fields = [
   ["guarantorRelationship", "Guarantor relationship"],
 ] as const;
 
-export default function ProfileForm({ initialValues }: { initialValues: ProfileValues }) {
+type Contact = { name: string; phone: string; relationship: string };
+
+export default function ProfileForm({
+  initialValues,
+  additionalContacts,
+}: {
+  initialValues: ProfileValues;
+  additionalContacts: Contact[];
+}) {
   const [values, setValues] = useState(initialValues);
   const [address, setAddress] = useState(initialValues.currentAddress || "");
+  const [contacts, setContacts] = useState<Contact[]>(additionalContacts);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -55,7 +62,7 @@ export default function ProfileForm({ initialValues }: { initialValues: ProfileV
     const response = await fetch("/api/student/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, currentAddress: address }),
+      body: JSON.stringify({ ...values, currentAddress: address, emergencyContacts: contacts }),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -101,12 +108,38 @@ export default function ProfileForm({ initialValues }: { initialValues: ProfileV
       <section className="border-t border-[#F1F5F9] pt-7">
         <h2 className="text-lg font-bold text-[#0F172A]">Emergency contact</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          {fields.slice(14, 20).map(([key, label]) => (
+          {fields.slice(14, 17).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
               <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
             </label>
           ))}
+        </div>
+        <div className="mt-5 space-y-3">
+          {contacts.map((contact, index) => (
+            <div key={index} className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#64748B]">Additional contact {index + 1}</p>
+                <button type="button" onClick={() => setContacts((current) => current.filter((_, contactIndex) => contactIndex !== index))} className="text-xs font-bold text-rose-600 hover:underline">Remove</button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(["name", "phone", "relationship"] as const).map((key) => (
+                  <label key={key} className="space-y-1 text-xs font-bold text-[#334155]">
+                    {key === "name" ? "Name" : key === "phone" ? "Phone" : "Relationship"}
+                    <input value={contact[key]} onChange={(event) => setContacts((current) => current.map((item, contactIndex) => contactIndex === index ? { ...item, [key]: event.target.value } : item))} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="relative w-fit">
+            <button type="button" onClick={() => setAddMenuOpen((open) => !open)} className="rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-xs font-bold text-[#334155] hover:bg-[#F8FAFC]">+ Add emergency contact</button>
+            {addMenuOpen && (
+              <div className="absolute left-0 top-full z-10 mt-2 w-52 rounded-xl border border-[#E5E7EB] bg-white p-1.5 shadow-lg">
+                <button type="button" onClick={() => { setContacts((current) => [...current, { name: "", phone: "", relationship: "" }]); setAddMenuOpen(false); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#334155] hover:bg-[#F8FAFC]">Add another contact</button>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

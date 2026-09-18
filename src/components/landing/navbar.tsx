@@ -112,7 +112,7 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
               <div className="h-5 w-[1px] bg-gray-200 mx-1" />
               
               {/* Interactive Sign In Dropdown */}
-              <div className="relative" onMouseLeave={() => setSignInDropdownOpen(false)}>
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setSignInDropdownOpen(!signInDropdownOpen)}
@@ -207,7 +207,7 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
               <div className="h-5 w-[1px] bg-gray-200 mx-1" />
 
               {/* Interactive Sign In Dropdown for Landlord page */}
-              <div className="relative" onMouseLeave={() => setSignInDropdownOpen(false)}>
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setSignInDropdownOpen(!signInDropdownOpen)}
