@@ -165,9 +165,12 @@ export default function LandlordPropertiesView({
 
                   {/* Title & Address */}
                   <div>
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                    <Link
+                      href={`/landlord/properties/${property.id}`}
+                      className="text-base font-bold text-gray-900 group-hover:text-emerald-700 transition-colors block"
+                    >
                       {property.title}
-                    </h3>
+                    </Link>
                     <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                       <LuMapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span className="truncate">{property.address}, {property.suburb}</span>

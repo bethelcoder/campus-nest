@@ -288,6 +288,10 @@ model Tenancy {
   startDate  DateTime
   endDate    DateTime?
   status     TenancyStatus @default(PENDING)
+  roomName   String?
+  roomType   String?
+  monthlyRent Decimal?
+  deposit    Decimal?
 
   confirmationLetter ConfirmationLetter?
 

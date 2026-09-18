@@ -52,6 +52,23 @@ async function main() {
     ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "monthlyBudget" DECIMAL(65,30);
   `).catch(e => console.log("Note monthlyBudget:", e.message));
 
+  // 3. Tenancy table updates (Room allocation & custom rent)
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenancy" ADD COLUMN IF NOT EXISTS "roomName" TEXT;
+  `).catch(e => console.log("Note roomName:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenancy" ADD COLUMN IF NOT EXISTS "roomType" TEXT;
+  `).catch(e => console.log("Note roomType:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenancy" ADD COLUMN IF NOT EXISTS "monthlyRent" DECIMAL(65,30);
+  `).catch(e => console.log("Note monthlyRent:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "Tenancy" ADD COLUMN IF NOT EXISTS "deposit" DECIMAL(65,30);
+  `).catch(e => console.log("Note deposit:", e.message));
+
   console.log("✅ Schema sync completed successfully!");
   await prisma.$disconnect();
 }
