@@ -129,6 +129,9 @@ model StudentProfile {
   emergencyContactName         String?
   emergencyContactPhone        String?
   emergencyContactRelationship String?
+  emergencyContact2Name         String?
+  emergencyContact2Phone        String?
+  emergencyContact2Relationship String?
   currentAddress               String?
   city                         String?
   province                     String?
@@ -291,6 +294,10 @@ model Tenancy {
   startDate  DateTime
   endDate    DateTime?
   status     TenancyStatus @default(PENDING)
+  roomName   String?
+  roomType   String?
+  monthlyRent Decimal?
+  deposit    Decimal?
 
   confirmationLetter ConfirmationLetter?
 

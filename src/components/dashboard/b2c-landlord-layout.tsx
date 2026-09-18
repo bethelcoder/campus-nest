@@ -14,6 +14,7 @@ import {
   SettingsIcon,
   ChevronDownIcon,
   StoreFrontIcon,
+  UsersIcon,
 } from "@/components/common/Icons";
 import { LuPlus, LuBuilding2, LuCheck } from "react-icons/lu";
 
@@ -64,9 +65,15 @@ export default function B2cLandlordLayout({
     }
   }
 
+  const totalTenancies = properties.reduce(
+    (sum, p) => sum + (p.tenancies?.length || (p._count?.tenancies ?? 0)),
+    0
+  );
+
   const mainNavItems = [
     { label: "Home", href: "/dashboard/landlord", icon: HomeIcon },
     { label: "My Residences", href: "/landlord/properties", icon: BuildingIcon, count: properties.length },
+    { label: "Tenancy", href: "/landlord/tenancies", icon: UsersIcon, count: totalTenancies > 0 ? totalTenancies : undefined },
     { label: "Inbound Applicants", href: "/dashboard/landlord#applications", icon: FileTextIcon, count: 2 },
   ];
 
