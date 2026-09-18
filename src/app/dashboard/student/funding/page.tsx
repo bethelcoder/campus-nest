@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
 import { redirect } from "next/navigation";
+import { getRoleDashboardPath } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -97,11 +98,13 @@ function SectionCard({
 export default async function StudentFundingPage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/dashboard/student/funding");
+  if (session.role !== "STUDENT") redirect(getRoleDashboardPath(session.role));
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.sub },
     include: { studentProfile: true },
   });
+  if (!dbUser) redirect("/login");
 
   const profile = dbUser?.studentProfile;
   const data: FundingPageData = dbUser

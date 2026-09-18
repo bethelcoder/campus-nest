@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getRoleDashboardPath } from "@/lib/rbac";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login?next=/dashboard");
-  if (session.role !== "STUDENT") redirect("/");
+  if (session.role !== "STUDENT") redirect(getRoleDashboardPath(session.role));
 
   const user = await prisma.user.findUnique({
     where: { id: session.sub },

@@ -102,6 +102,8 @@ function VerifyForm() {
       const destination = data.targetUrl || (
         role === "SRC_REPRESENTATIVE"
           ? "/dashboard/src"
+          : role === "ADMIN"
+          ? "/dashboard/admin"
           : role === "LANDLORD"
           ? "/landlord/onboarding"
           : "/onboarding"

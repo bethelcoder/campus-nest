@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
 import StudentSetupActionGrid from "@/components/dashboard/student-setup-action-grid";
 import FavoriteButton from "@/app/properties/favorite-button";

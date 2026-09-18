@@ -1,23 +1,29 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getRoleDashboardPath } from "@/lib/rbac";
 
 export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login?next=/onboarding");
-  if (session.role !== "STUDENT") {
-    if (session.role === "LANDLORD") redirect("/landlord/properties");
-    redirect("/");
+
+  if (session.role === "LANDLORD") {
+    redirect(session.onboardingCompleted ? "/dashboard/landlord" : "/landlord/onboarding");
+  } else if (session.role !== "STUDENT") {
+    redirect(getRoleDashboardPath(session.role));
   }
 
-  // If already completed onboarding, redirect directly to student dashboard
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { onboardingCompleted: true },
+    select: { onboardingCompleted: true, emailVerifiedAt: true, email: true, role: true },
   });
 
+  if (!user?.emailVerifiedAt) {
+    redirect(`/verify?email=${encodeURIComponent(user?.email || "")}&role=${encodeURIComponent(user?.role || "STUDENT")}`);
+  }
+
   if (user?.onboardingCompleted) {
-    redirect("/dashboard");
+    redirect("/dashboard/student");
   }
 
   return <>{children}</>;

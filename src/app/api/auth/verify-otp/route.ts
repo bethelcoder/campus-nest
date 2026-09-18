@@ -160,6 +160,8 @@ export async function POST(req: NextRequest) {
     // Determine target destination
     const targetUrl = isSrc
       ? "/dashboard/src"
+      : updatedUser.role === "ADMIN"
+      ? "/dashboard/admin"
       : updatedUser.role === "LANDLORD"
       ? updatedUser.onboardingCompleted ? "/dashboard/landlord" : "/landlord/onboarding"
       : updatedUser.onboardingCompleted ? "/dashboard/student" : "/onboarding";

@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
 import { redirect } from "next/navigation";
+import { getRoleDashboardPath } from "@/lib/rbac";
 import ReportForm from "./report-form";
 import EscalateReportButton from "./escalate-report-button";
 
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function StudentMaintenancePage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/dashboard/student/maintenance");
+  if (session.role !== "STUDENT") redirect(getRoleDashboardPath(session.role));
 
   const student = await prisma.user.findUnique({
     where: { id: session.sub },

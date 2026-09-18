@@ -34,13 +34,14 @@ const physicalVerificationSchema = z.object({
 // that field directly drives the public "verified safe" signal.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
-  if (!session || (session.role !== "LANDLORD" && session.role !== "UNIVERSITY_ADMIN")) {
+  const isAdmin = session?.role === "ADMIN";
+  if (!session || (session.role !== "LANDLORD" && !isAdmin)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   const property = await prisma.property.findUnique({ where: { id: params.id } });
   if (!property) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (session.role === "UNIVERSITY_ADMIN") {
+  if (isAdmin) {
     const body = await req.json();
     const parsed = physicalVerificationSchema.safeParse(body);
     if (!parsed.success) {

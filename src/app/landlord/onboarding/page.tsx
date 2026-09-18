@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getRoleDashboardPath } from "@/lib/rbac";
 import LandlordOnboarding from "@/components/onboarding/landlord-onboarding";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function LandlordOnboardingPage() {
   const session = await getSession();
   if (!session) redirect("/landlord/login?next=/landlord/onboarding");
+
+  // Intercept cross-roles
+  if (session.role === "STUDENT") {
+    redirect(session.onboardingCompleted ? "/dashboard/student" : "/onboarding");
+  } else if (session.role !== "LANDLORD") {
+    redirect(getRoleDashboardPath(session.role));
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
