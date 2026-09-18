@@ -22,6 +22,8 @@ export default async function OnboardingPage() {
       universityEmail: true,
       onboardingStep: true,
       onboardingCompleted: true,
+      emailVerifiedAt: true,
+      role: true,
     },
   });
 
@@ -29,8 +31,12 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
+  if (!user.emailVerifiedAt) {
+    redirect(`/verify?email=${encodeURIComponent(user.email)}&role=${user.role}`);
+  }
+
   if (user.onboardingCompleted) {
-    redirect("/dashboard");
+    redirect("/dashboard/student");
   }
 
   return <StudentOnboarding initialUser={user} />;

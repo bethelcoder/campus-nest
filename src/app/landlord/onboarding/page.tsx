@@ -20,10 +20,13 @@ export default async function LandlordOnboardingPage() {
       idNumber: true,
       onboardingStep: true,
       onboardingCompleted: true,
+      emailVerifiedAt: true,
+      role: true,
     },
   });
 
   if (!user) redirect("/landlord/login");
+  if (!user.emailVerifiedAt) redirect(`/verify?email=${encodeURIComponent(user.email)}&role=${user.role}`);
   if (user.onboardingCompleted) redirect("/dashboard/landlord");
 
   return <LandlordOnboarding initialUser={user} />;

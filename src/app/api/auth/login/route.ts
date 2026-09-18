@@ -25,12 +25,52 @@ export async function POST(req: NextRequest) {
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) return genericError;
 
-  if (user.role === "STUDENT" && user.universityEmail && !user.emailVerifiedAt) {
+  if (!user.emailVerifiedAt) {
+    const { generateOtp, hashOtp, otpExpiryDate } = await import("@/lib/otp");
+    const { sendOtpEmail } = await import("@/lib/email");
+
+    let shouldSend = true;
+    if (user.lastOtpSentAt) {
+      const secondsSince = Math.floor((Date.now() - new Date(user.lastOtpSentAt).getTime()) / 1000);
+      if (secondsSince < 60) {
+        shouldSend = false;
+      }
+    }
+
+    if (shouldSend || !user.otpCodeHash || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      const freshOtp = generateOtp();
+      const freshOtpHash = await hashOtp(freshOtp);
+      const freshExpires = otpExpiryDate();
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          otpCodeHash: freshOtpHash,
+          otpExpiresAt: freshExpires,
+          otpAttempts: 0,
+          lastOtpSentAt: new Date(),
+        },
+      });
+
+      await sendOtpEmail({
+        to: user.email,
+        code: freshOtp,
+        name: user.name,
+        role: user.role,
+      }).catch((err) => console.warn("Login unverified email dispatch warning:", err));
+    }
+
     return NextResponse.json(
-      { error: "Please verify your university email before logging in", needsVerification: true },
+      {
+        error: "Please verify your email address using the 6-digit code sent to your inbox before logging in.",
+        needsVerification: true,
+        email: user.email,
+        role: user.role,
+      },
       { status: 403 }
     );
   }
+
 
   const token = await signSession({
     sub: user.id,

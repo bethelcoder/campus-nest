@@ -7,6 +7,7 @@ import { FormEvent, useState, useEffect } from "react";
 import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { loginWithGoogle } from "@/lib/firebase";
+import { formatSrcAlias } from "@/lib/auth";
 
 type Role = "STUDENT" | "LANDLORD" | "SRC_REPRESENTATIVE";
 type Mode = "login" | "register";
@@ -206,7 +207,7 @@ function LoginForm({ role }: { role: Role }) {
       const data = await response.json();
       if (!response.ok) {
         if (data.needsVerification) {
-          router.push(`/verify?email=${encodeURIComponent(email)}`);
+          router.push(`/verify?email=${encodeURIComponent(email)}&role=${encodeURIComponent(data.role || role)}`);
           return;
         }
         setError(typeof data.error === "string" ? data.error : "Login failed");
@@ -236,47 +237,51 @@ function LoginForm({ role }: { role: Role }) {
 
   return (
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
-      <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={googleLoading || loading || redirecting}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
-        >
-          {googleLoading || redirecting ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
-              <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
-            </div>
-          ) : (
-            <>
-              <FcGoogle aria-hidden="true" size={18} /> Continue with Google
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          disabled={googleLoading || loading || redirecting}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
-        >
-          <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
-            <FaFacebookF aria-hidden="true" size={11} />
-          </span>{" "}
-          Continue with Facebook
-        </button>
-      </div>
-      <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
-        <span>or</span>
-      </div>
+      {role !== "SRC_REPRESENTATIVE" && (
+        <>
+          <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading || loading || redirecting}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
+            >
+              {googleLoading || redirecting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
+                  <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
+                </div>
+              ) : (
+                <>
+                  <FcGoogle aria-hidden="true" size={18} /> Continue with Google
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={googleLoading || loading || redirecting}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
+            >
+              <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
+                <FaFacebookF aria-hidden="true" size={11} />
+              </span>{" "}
+              Continue with Facebook
+            </button>
+          </div>
+          <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
+            <span>or sign in with university credentials</span>
+          </div>
+        </>
+      )}
       <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-        Email address
+        {role === "SRC_REPRESENTATIVE" ? "Official SRC University Email" : "Email address"}
         <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10" 
           required
           type="email"
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
+          placeholder={role === "SRC_REPRESENTATIVE" ? "src.housing@wits.ac.za" : "you@example.com"}
         />
       </label>
       <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
@@ -290,30 +295,39 @@ function LoginForm({ role }: { role: Role }) {
           placeholder="Enter your password"
         />
       </label>
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-1.5 text-[9px] font-medium leading-[1.6] text-[#687385]">
-          <input type="checkbox" /> Remember me
-        </label>
-        <button type="button" className="rounded-none border-0 bg-transparent p-0 font-poppins text-[11px] font-medium leading-[1.6] text-[#687385] underline">
-          Forgot your password?
-        </button>
-      </div>
       {error && <p className="m-0 text-[10px] leading-[1.6] text-[#c53a3a]">{error}</p>}
-      <button disabled={loading || googleLoading || redirecting} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60 cursor-pointer">
-        {redirecting ? "Redirecting..." : loading ? "Signing in..." : "Sign in"}
+      <button disabled={loading || googleLoading || redirecting} className={`min-h-12 rounded-2xl border-0 px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-md disabled:cursor-wait disabled:opacity-60 cursor-pointer transition-all ${role === "SRC_REPRESENTATIVE" ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20" : "bg-[#1084ed] hover:bg-[#0876d8] shadow-[#1084ed]/20"}`}>
+        {redirecting ? "Redirecting..." : loading ? "Signing in..." : role === "SRC_REPRESENTATIVE" ? "Sign In to SRC Desk" : "Sign in"}
       </button>
     </form>
   );
 }
 
+const SA_UNIVERSITIES = [
+  "University of the Witwatersrand (Wits)",
+  "University of Johannesburg (UJ)",
+  "University of Cape Town (UCT)",
+  "University of Pretoria (UP)",
+  "Stellenbosch University (SU)",
+  "Tshwane University of Technology (TUT)",
+  "University of KwaZulu-Natal (UKZN)",
+  "Nelson Mandela University (NMU)",
+  "Durban University of Technology (DUT)",
+  "North-West University (NWU)",
+  "University of the Western Cape (UWC)",
+  "Central University of Technology (CUT)",
+  "Other South African Institution",
+];
+
 function RegisterForm({ role }: { role: Role }) {
   const router = useRouter();
+  const isSrc = role === "SRC_REPRESENTATIVE";
   const [form, setForm] = useState({
     name: "",
     surname: "",
     email: "",
     universityEmail: "",
-    institutionName: "",
+    institutionName: isSrc ? SA_UNIVERSITIES[0] : "",
     phone: "",
     password: "",
   });
@@ -321,6 +335,9 @@ function RegisterForm({ role }: { role: Role }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+
+  const currentInstitution = form.institutionName || SA_UNIVERSITIES[0];
+  const srcAlias = formatSrcAlias(currentInstitution);
 
   useEffect(() => {
     router.prefetch("/onboarding");
@@ -334,14 +351,23 @@ function RegisterForm({ role }: { role: Role }) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  const [srcVerificationNotice, setSrcVerificationNotice] = useState<{
+    email: string;
+    verificationUrl?: string;
+  } | null>(null);
+
   async function handleGoogleRegister() {
     setError(null);
     setGoogleLoading(true);
     try {
       const gUser = await loginWithGoogle();
+      if (!gUser.email) {
+        throw new Error("No email returned from Google authentication");
+      }
+
       const displayNameParts = (gUser.displayName || "").trim().split(" ");
-      const firstName = displayNameParts[0] || "";
-      const surname = displayNameParts.slice(1).join(" ") || "";
+      const firstName = displayNameParts[0] || "User";
+      const surname = displayNameParts.slice(1).join(" ") || "Student";
 
       const res = await fetch("/api/auth/firebase-sync", {
         method: "POST",
@@ -380,43 +406,53 @@ function RegisterForm({ role }: { role: Role }) {
     setError(null);
     setLoading(true);
     try {
+      const selectedInstitution = isSrc ? (form.institutionName || SA_UNIVERSITIES[0]) : form.institutionName;
+      const alias = isSrc ? formatSrcAlias(selectedInstitution) : { name: form.name, surname: form.surname };
+      const emailToSubmit = isSrc ? form.universityEmail : form.email;
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role,
-          ...form,
-          email: role === "SRC_REPRESENTATIVE" ? form.universityEmail : form.email,
-          universityEmail: form.universityEmail || undefined,
-          institutionName: form.institutionName || undefined,
+          name: alias.name,
+          surname: alias.surname,
+          email: emailToSubmit,
+          universityEmail: isSrc ? form.universityEmail : (form.universityEmail || undefined),
+          institutionName: selectedInstitution || undefined,
+          phone: form.phone || undefined,
+          password: form.password,
         }),
       });
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (e) {
+        data = { error: `Server response error (${response.status}). Please try again.` };
+      }
+
       if (!response.ok) {
-        setError(
-          typeof data.error === "string" ? data.error : "Registration failed",
-        );
+        let errMsg = "Registration failed";
+        if (typeof data.error === "string") {
+          errMsg = data.error;
+        } else if (data.error && typeof data.error === "object") {
+          const fieldErrors = Object.values(data.error.fieldErrors || {}).flat();
+          if (fieldErrors.length > 0) {
+            errMsg = fieldErrors.join(", ");
+          } else if (data.error.formErrors && Array.isArray(data.error.formErrors)) {
+            errMsg = data.error.formErrors.join(", ");
+          }
+        }
+        setError(errMsg);
         setLoading(false);
         return;
       }
+
+      // ALL successful registrations route to OTP verification
       setRedirecting(true);
-      if (data.user?.role === "SRC_REPRESENTATIVE") {
-        window.location.href = "/dashboard/src";
-        return;
-      }
-      if (data.nextStep === "landlord-onboarding" || data.user?.role === "LANDLORD") {
-        window.location.href = "/landlord/onboarding";
-        return;
-      }
-      if (data.nextStep === "onboarding" || data.user?.role === "STUDENT") {
-        window.location.href = "/onboarding";
-        return;
-      }
-      if (data.nextStep === "verify-otp") {
-        window.location.href = `/verify?email=${encodeURIComponent(form.universityEmail)}`;
-      } else {
-        window.location.href = rolePath(role, "login");
-      }
+      const targetEmail = data.email || emailToSubmit;
+      const targetRole = data.role || role;
+      window.location.href = `/verify?email=${encodeURIComponent(targetEmail)}&role=${encodeURIComponent(targetRole)}`;
     } catch (err: any) {
       setError(err.message || "An error occurred");
       setLoading(false);
@@ -425,80 +461,117 @@ function RegisterForm({ role }: { role: Role }) {
 
   return (
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
-      {/* 3rd Party Google Registration Option */}
-      <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
-        <button
-          type="button"
-          onClick={handleGoogleRegister}
-          disabled={googleLoading || loading || redirecting}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
-        >
-          {googleLoading || redirecting ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
-              <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
-            </div>
-          ) : (
-            <>
-              <FcGoogle aria-hidden="true" size={18} /> Continue with Google
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          disabled={googleLoading || loading || redirecting}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
-        >
-          <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
-            <FaFacebookF aria-hidden="true" size={11} />
-          </span>{" "}
-          Continue with Facebook
-        </button>
-      </div>
-
-      <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
-        <span>or sign up with email</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
-        <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-          First name
-          <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
-            required
-            value={form.name}
-            onChange={(event) => update("name", event.target.value)}
-            placeholder="First name"
-          />
-        </label>
-        <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-          Surname
-          <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
-            required
-            value={form.surname}
-            onChange={(event) => update("surname", event.target.value)}
-            placeholder="Surname"
-          />
-        </label>
-      </div>
-      {role === "SRC_REPRESENTATIVE" ? (
+      {/* 3rd Party Google Registration Option (hidden for SRC to enforce official university credentials) */}
+      {!isSrc && (
         <>
+          <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
+            <button
+              type="button"
+              onClick={handleGoogleRegister}
+              disabled={googleLoading || loading || redirecting}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] disabled:opacity-60 cursor-pointer transition-all"
+            >
+              {googleLoading || redirecting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#1084ed] border-t-transparent rounded-full animate-spin" />
+                  <span>{redirecting ? "Redirecting..." : "Connecting..."}</span>
+                </div>
+              ) : (
+                <>
+                  <FcGoogle aria-hidden="true" size={18} /> Continue with Google
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={googleLoading || loading || redirecting}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
+            >
+              <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
+                <FaFacebookF aria-hidden="true" size={11} />
+              </span>{" "}
+              Continue with Facebook
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
+            <span>or sign up with email</span>
+          </div>
+        </>
+      )}
+
+      {/* For Student and Landlord roles: First Name & Surname */}
+      {!isSrc && (
+        <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
           <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-            University or institution
-            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+            First name
+            <input
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
               required
-              value={form.institutionName}
-              onChange={(event) => update("institutionName", event.target.value)}
-              placeholder="University you work for"
+              value={form.name}
+              onChange={(event) => update("name", event.target.value)}
+              placeholder="First name"
             />
           </label>
           <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
-            Student or university email
-            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+            Surname
+            <input
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+              required
+              value={form.surname}
+              onChange={(event) => update("surname", event.target.value)}
+              placeholder="Surname"
+            />
+          </label>
+        </div>
+      )}
+
+      {/* For SRC Role: University Institution Selector & Official SRC Domain Email & Alias Preview */}
+      {isSrc ? (
+        <>
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            University / Higher Education Institution
+            <select
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10 cursor-pointer"
+              required
+              value={form.institutionName || SA_UNIVERSITIES[0]}
+              onChange={(event) => update("institutionName", event.target.value)}
+            >
+              {SA_UNIVERSITIES.map((uni) => (
+                <option key={uni} value={uni}>
+                  {uni}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Institutional Alias Preview Box */}
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5 text-xs text-indigo-950 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">
+                Institutional Council Alias
+              </span>
+              <span className="text-[10px] font-bold bg-indigo-200/60 text-indigo-800 px-2 py-0.5 rounded-full">
+                Office Account
+              </span>
+            </div>
+            <p className="font-bold text-gray-900 text-sm">
+              {srcAlias.name} {srcAlias.surname}
+            </p>
+            <p className="text-[11px] text-gray-500 leading-snug">
+              Official council desk alias auto-assigned from university type. No personal first/last name required.
+            </p>
+          </div>
+
+          <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
+            Official SRC University Domain Email
+            <input
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
               required
               type="email"
               value={form.universityEmail}
               onChange={(event) => update("universityEmail", event.target.value)}
-              placeholder="you@university.ac.za"
+              placeholder="e.g. src.housing@wits.ac.za"
             />
           </label>
         </>
@@ -506,7 +579,8 @@ function RegisterForm({ role }: { role: Role }) {
         <>
           <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
             Email address
-            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+            <input
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
               required
               type="email"
               value={form.email}
@@ -516,7 +590,8 @@ function RegisterForm({ role }: { role: Role }) {
           </label>
           <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
             Phone number
-            <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+            <input
+              className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
               required
               type="tel"
               value={form.phone}
@@ -529,7 +604,8 @@ function RegisterForm({ role }: { role: Role }) {
 
       <label className="grid gap-2 text-xs font-semibold leading-[1.75] text-[#4b5563]">
         Password
-        <input className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
+        <input
+          className="min-h-12 w-full rounded-2xl border border-[#d8e0e8] bg-[#fbfcfd] px-4 py-[13px] font-poppins text-[13px] font-normal leading-[1.7] text-[#182333] outline-none focus:border-[#1684e8] focus:ring-4 focus:ring-[#1684e8]/10"
           required
           minLength={8}
           type="password"
@@ -538,11 +614,29 @@ function RegisterForm({ role }: { role: Role }) {
           placeholder="At least 8 characters"
         />
       </label>
+
       {error && <p className="m-0 text-[10px] leading-[1.6] text-[#c53a3a]">{error}</p>}
-      <button disabled={loading || googleLoading || redirecting} className="min-h-12 rounded-2xl border-0 bg-[#1084ed] px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-[0_4px_10px_rgba(16,132,237,0.2)] hover:bg-[#0876d8] disabled:cursor-wait disabled:opacity-60 cursor-pointer">
-        {redirecting ? "Redirecting..." : loading ? "Creating account..." : "Create account"}
+
+      <button
+        disabled={loading || googleLoading || redirecting}
+        className={`min-h-12 rounded-2xl border-0 px-4 py-[13px] font-poppins text-[13px] font-bold leading-[1.5] text-white shadow-md disabled:cursor-wait disabled:opacity-60 cursor-pointer transition-all ${
+          isSrc
+            ? "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20"
+            : "bg-[#1084ed] hover:bg-[#0876d8] shadow-[#1084ed]/20"
+        }`}
+      >
+        {redirecting
+          ? "Redirecting..."
+          : loading
+          ? isSrc
+            ? "Registering Council Account..."
+            : "Creating account..."
+          : isSrc
+          ? "Register SRC Account & Send Verification Link"
+          : "Create account"}
       </button>
     </form>
   );
 }
+
 

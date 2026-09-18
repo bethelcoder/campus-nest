@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { LuMenu, LuX, LuShieldCheck, LuArrowRight, LuBuilding2, LuGraduationCap } from "react-icons/lu";
+import { LuMenu, LuX, LuShieldCheck, LuArrowRight, LuBuilding2, LuGraduationCap, LuChevronDown } from "react-icons/lu";
 
 interface NavbarProps {
   mode?: "student" | "landlord";
@@ -11,6 +11,7 @@ interface NavbarProps {
 export default function Navbar({ mode = "student" }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [signInDropdownOpen, setSignInDropdownOpen] = useState(false);
 
   useEffect(() => {
     function handleScroll() {
@@ -109,12 +110,84 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
                 For Landlords
               </Link>
               <div className="h-5 w-[1px] bg-gray-200 mx-1" />
-              <Link
-                href="/login"
-                className="text-xs font-semibold text-gray-700 hover:text-gray-900 px-3.5 py-2 rounded-xl hover:bg-gray-100/80 transition-colors"
-              >
-                Sign In
-              </Link>
+              
+              {/* Interactive Sign In Dropdown */}
+              <div className="relative" onMouseLeave={() => setSignInDropdownOpen(false)}>
+                <button
+                  type="button"
+                  onClick={() => setSignInDropdownOpen(!signInDropdownOpen)}
+                  onMouseEnter={() => setSignInDropdownOpen(true)}
+                  className="text-xs font-semibold text-gray-700 hover:text-gray-900 px-3.5 py-2 rounded-xl hover:bg-gray-100/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Sign In</span>
+                  <LuChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${signInDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {signInDropdownOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                      Choose Portal
+                    </div>
+
+                    <Link
+                      href="/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100/60 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuGraduationCap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 block">
+                          Student Portal
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Apply for rooms &amp; leases
+                        </span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/landlord/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-blue-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/60 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuBuilding2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-blue-800 block">
+                          Landlord Hub
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Manage residence listings
+                        </span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/src/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-purple-100/60 text-purple-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-purple-800 block">
+                          SRC Council Desk
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Complaints &amp; crisis triage
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <Link
                 href="/register"
                 className="text-xs font-bold bg-[#099250] hover:bg-[#087a43] text-white px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
@@ -132,12 +205,84 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
                 Student Portal
               </Link>
               <div className="h-5 w-[1px] bg-gray-200 mx-1" />
-              <Link
-                href="/landlord/login"
-                className="text-xs font-semibold text-gray-700 hover:text-gray-900 px-3.5 py-2 rounded-xl hover:bg-gray-100/80 transition-colors"
-              >
-                Landlord Sign In
-              </Link>
+
+              {/* Interactive Sign In Dropdown for Landlord page */}
+              <div className="relative" onMouseLeave={() => setSignInDropdownOpen(false)}>
+                <button
+                  type="button"
+                  onClick={() => setSignInDropdownOpen(!signInDropdownOpen)}
+                  onMouseEnter={() => setSignInDropdownOpen(true)}
+                  className="text-xs font-semibold text-gray-700 hover:text-gray-900 px-3.5 py-2 rounded-xl hover:bg-gray-100/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Sign In</span>
+                  <LuChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${signInDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {signInDropdownOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                      Choose Portal
+                    </div>
+
+                    <Link
+                      href="/landlord/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100/60 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuBuilding2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 block">
+                          Landlord Hub
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Manage residence listings
+                        </span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-blue-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/60 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuGraduationCap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-blue-800 block">
+                          Student Portal
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Apply for rooms &amp; leases
+                        </span>
+                      </div>
+                    </Link>
+
+                    <Link
+                      href="/src/login"
+                      onClick={() => setSignInDropdownOpen(false)}
+                      className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/70 transition-colors group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-purple-100/60 text-purple-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <LuShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-gray-900 group-hover:text-purple-800 block">
+                          SRC Council Desk
+                        </span>
+                        <span className="text-[11px] text-gray-500 block leading-tight">
+                          Complaints &amp; crisis triage
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <Link
                 href="/landlord/register"
                 className="text-xs font-bold bg-[#099250] hover:bg-[#087a43] text-white px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
@@ -152,7 +297,7 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
+          className="md:hidden p-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <LuX className="w-5 h-5" /> : <LuMenu className="w-5 h-5" />}
@@ -207,6 +352,13 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
                 >
                   <LuBuilding2 className="w-4 h-4" /> Go to Landlord Hub
                 </Link>
+                <Link
+                  href="/src/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 text-purple-700 font-bold flex items-center gap-2"
+                >
+                  <LuShieldCheck className="w-4 h-4" /> SRC Council Portal
+                </Link>
               </>
             ) : (
               <>
@@ -245,42 +397,38 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
                 >
                   <LuGraduationCap className="w-4 h-4" /> Go to Student Portal
                 </Link>
+                <Link
+                  href="/src/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 text-purple-700 font-bold flex items-center gap-2"
+                >
+                  <LuShieldCheck className="w-4 h-4" /> SRC Council Portal
+                </Link>
               </>
             )}
           </nav>
 
           <div className="pt-3 border-t border-gray-100 flex flex-col gap-2.5">
-            {mode === "student" ? (
-              <>
-                <Link
-                  href="/login"
-                  className="w-full text-center py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-800"
-                >
-                  Student Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="w-full text-center py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm"
-                >
-                  Find Safe Housing
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/landlord/login"
-                  className="w-full text-center py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-800"
-                >
-                  Landlord Sign In
-                </Link>
-                <Link
-                  href="/landlord/register"
-                  className="w-full text-center py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm"
-                >
-                  List Your Property Free
-                </Link>
-              </>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/login"
+                className="text-center py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 hover:bg-gray-50"
+              >
+                Student Sign In
+              </Link>
+              <Link
+                href="/landlord/login"
+                className="text-center py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-800 hover:bg-gray-50"
+              >
+                Landlord Sign In
+              </Link>
+            </div>
+            <Link
+              href="/register"
+              className="w-full text-center py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm"
+            >
+              Get Started Now
+            </Link>
           </div>
         </div>
       )}

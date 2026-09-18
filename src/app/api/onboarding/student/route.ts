@@ -21,6 +21,7 @@ export async function GET() {
       phone: true,
       idNumber: true,
       universityEmail: true,
+      emailVerifiedAt: true,
       onboardingCompleted: true,
       onboardingStep: true,
       studentProfile: true,
@@ -29,6 +30,10 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  if (!user.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email verification required", needsVerification: true, email: user.email }, { status: 403 });
   }
 
   let profile = user.studentProfile;
@@ -70,14 +75,15 @@ const step2Schema = z.object({
   studentNumber: z.string().optional().nullable(),
   degreeProgram: z.string().optional().nullable(),
   yearOfStudy: z.string().optional().nullable(),
-  universityEmail: z.string().email("Invalid email format").optional().nullable().or(z.literal("")),
+  proofOfRegistrationUrl: z.string().optional().nullable(),
+  proofOfRegistrationName: z.string().optional().nullable(),
 }).refine((data) => {
   if (data.isEnrolled) {
-    return !!data.universityName && !!data.studentNumber && !!data.degreeProgram && !!data.yearOfStudy;
+    return !!data.universityName && !!data.studentNumber && !!data.degreeProgram && !!data.yearOfStudy && !!data.proofOfRegistrationUrl;
   }
   return true;
 }, {
-  message: "All university enrollment fields are mandatory when enrolled.",
+  message: "All university enrollment fields and Proof of Registration document are required when enrolled.",
 });
 
 const step3Schema = z.object({
@@ -97,6 +103,15 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "STUDENT") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { emailVerifiedAt: true, email: true },
+  });
+
+  if (!user?.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email verification required", needsVerification: true, email: user?.email }, { status: 403 });
   }
 
   const body = await req.json();
@@ -180,7 +195,6 @@ export async function POST(req: NextRequest) {
         where: { id: session.sub },
         data: {
           phone: d.phone ?? undefined,
-          universityEmail: d.universityEmail && d.universityEmail.trim() !== "" ? d.universityEmail : undefined,
           onboardingStep: 3,
         },
       }),
@@ -199,6 +213,8 @@ export async function POST(req: NextRequest) {
           studentNumber: d.isEnrolled ? d.studentNumber : null,
           degreeProgram: d.isEnrolled ? d.degreeProgram : null,
           yearOfStudy: d.isEnrolled ? d.yearOfStudy : null,
+          proofOfRegistrationUrl: d.isEnrolled ? d.proofOfRegistrationUrl : null,
+          proofOfRegistrationName: d.isEnrolled ? d.proofOfRegistrationName : null,
         },
         update: {
           emergencyContactName: d.emergencyContactName,
@@ -212,6 +228,8 @@ export async function POST(req: NextRequest) {
           studentNumber: d.isEnrolled ? d.studentNumber : null,
           degreeProgram: d.isEnrolled ? d.degreeProgram : null,
           yearOfStudy: d.isEnrolled ? d.yearOfStudy : null,
+          proofOfRegistrationUrl: d.isEnrolled ? d.proofOfRegistrationUrl : null,
+          proofOfRegistrationName: d.isEnrolled ? d.proofOfRegistrationName : null,
         },
       }),
     ]);

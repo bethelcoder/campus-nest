@@ -20,6 +20,7 @@ export async function GET() {
       email: true,
       phone: true,
       idNumber: true,
+      emailVerifiedAt: true,
       onboardingCompleted: true,
       onboardingStep: true,
       landlordProfile: true,
@@ -28,6 +29,10 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  if (!user.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email verification required", needsVerification: true, email: user.email }, { status: 403 });
   }
 
   let profile = user.landlordProfile;
@@ -56,6 +61,15 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "LANDLORD") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { emailVerifiedAt: true, email: true },
+  });
+
+  if (!user?.emailVerifiedAt) {
+    return NextResponse.json({ error: "Email verification required", needsVerification: true, email: user?.email }, { status: 403 });
   }
 
   try {

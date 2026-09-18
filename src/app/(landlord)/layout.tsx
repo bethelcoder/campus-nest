@@ -7,14 +7,17 @@ export default async function LandlordLayout({ children }: { children: React.Rea
   if (!session) redirect("/landlord/login?next=/landlord/properties");
   if (session.role !== "LANDLORD") redirect("/");
 
-  if (!session.onboardingCompleted) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.sub },
-      select: { onboardingCompleted: true },
-    });
-    if (!user?.onboardingCompleted) {
-      redirect("/landlord/onboarding");
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { onboardingCompleted: true, emailVerifiedAt: true, email: true, role: true },
+  });
+
+  if (!user?.emailVerifiedAt) {
+    redirect(`/verify?email=${encodeURIComponent(user?.email || "")}&role=${user?.role || "LANDLORD"}`);
+  }
+
+  if (!user.onboardingCompleted) {
+    redirect("/landlord/onboarding");
   }
 
   return <>{children}</>;

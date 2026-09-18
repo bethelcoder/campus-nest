@@ -80,12 +80,13 @@ model User {
   passwordHash    String?
   firebaseUid     String?   @unique
 
-  // University verification (students only)
+  // University & Email verification
   universityEmail String?   @unique
   emailVerifiedAt DateTime?
   otpCodeHash     String?
   otpExpiresAt    DateTime?
   otpAttempts     Int       @default(0)
+  lastOtpSentAt   DateTime?
 
   // Onboarding tracking
   onboardingCompleted Boolean   @default(false)
@@ -124,7 +125,7 @@ model StudentProfile {
   idDocumentCertified  Boolean   @default(false)
   idCertificationDate  DateTime?
 
-  // Step 2: Contact & Study Details
+  // Step 2: Contact, Study Details & Proof of Registration
   emergencyContactName         String?
   emergencyContactPhone        String?
   emergencyContactRelationship String?
@@ -137,6 +138,8 @@ model StudentProfile {
   studentNumber                String?
   degreeProgram                String?
   yearOfStudy                  String?
+  proofOfRegistrationUrl       String?
+  proofOfRegistrationName      String?
 
   // Step 3: Funding & Household Details
   fundingType                  String?   // NSFAS, BURSARY, SELF_FUNDED, LOAN, OTHER

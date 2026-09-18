@@ -54,4 +54,22 @@ export async function verifySession(
   }
 }
 
+export function formatSrcAlias(institutionName: string): { name: string; surname: string } {
+  if (!institutionName) {
+    return { name: "University", surname: "SRC Housing" };
+  }
+  const match = institutionName.match(/\(([^)]+)\)/);
+  if (match && match[1]) {
+    const abbr = match[1].trim();
+    if (abbr.toLowerCase() === "wits") {
+      return { name: "Wits University", surname: "SRC Housing" };
+    }
+    return { name: `${abbr} University`, surname: "SRC Housing" };
+  }
+  return {
+    name: institutionName.trim(),
+    surname: "SRC Housing",
+  };
+}
+
 export const SESSION_COOKIE = "shp_session";

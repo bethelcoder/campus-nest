@@ -7,14 +7,17 @@ export default async function StudentLayout({ children }: { children: React.Reac
   if (!session) redirect("/login?next=/dashboard");
   if (session.role !== "STUDENT") redirect("/");
 
-  if (!session.onboardingCompleted) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.sub },
-      select: { onboardingCompleted: true },
-    });
-    if (!user?.onboardingCompleted) {
-      redirect("/onboarding");
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { onboardingCompleted: true, emailVerifiedAt: true, email: true, role: true },
+  });
+
+  if (!user?.emailVerifiedAt) {
+    redirect(`/verify?email=${encodeURIComponent(user?.email || "")}&role=${user?.role || "STUDENT"}`);
+  }
+
+  if (!user.onboardingCompleted) {
+    redirect("/onboarding");
   }
 
   return <>{children}</>;
