@@ -8,7 +8,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
   if (!session) redirect("/login?next=/onboarding");
 
   if (session.role === "LANDLORD") {
-    redirect("/landlord/onboarding");
+    redirect(session.onboardingCompleted ? "/dashboard/landlord" : "/landlord/onboarding");
   } else if (session.role !== "STUDENT") {
     redirect(getRoleDashboardPath(session.role));
   }

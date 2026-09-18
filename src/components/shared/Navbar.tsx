@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
 export interface NavbarProps {
-  userRole?: "STUDENT" | "LANDLORD" | "ADMIN" | "UNIVERSITY_ADMIN" | "SRC_REPRESENTATIVE" | null;
+  userRole?: "STUDENT" | "LANDLORD" | "ADMIN" | "SRC_REPRESENTATIVE" | null;
   userName?: string | null;
 }
 
@@ -49,7 +49,6 @@ export function Navbar({ userRole, userName }: NavbarProps) {
       case "LANDLORD":
         return <Badge variant="success" size="sm" icon={<Building2 className="w-3 h-3 mr-1" />}>Landlord / Operator</Badge>;
       case "ADMIN":
-      case "UNIVERSITY_ADMIN":
         return <Badge variant="navy" size="sm" icon={<Shield className="w-3 h-3 mr-1" />}>Platform Admin</Badge>;
       case "SRC_REPRESENTATIVE":
         return <Badge variant="purple" size="sm" icon={<Scale className="w-3 h-3 mr-1" />}>SRC Council</Badge>;
@@ -176,7 +175,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                 </>
               )}
 
-              {(userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN") && (
+              {userRole === "ADMIN" && (
                 <>
                   <Link
                     href="/dashboard/admin"
@@ -237,7 +236,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                             ? "/dashboard/student"
                             : userRole === "LANDLORD"
                             ? "/dashboard/landlord"
-                            : userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN"
+                            : userRole === "ADMIN"
                             ? "/dashboard/admin"
                             : "/dashboard/src"
                         }

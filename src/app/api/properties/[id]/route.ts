@@ -34,7 +34,7 @@ const physicalVerificationSchema = z.object({
 // that field directly drives the public "verified safe" signal.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
-  const isAdmin = session?.role === "ADMIN" || (session?.role as string) === "UNIVERSITY_ADMIN";
+  const isAdmin = session?.role === "ADMIN";
   if (!session || (session.role !== "LANDLORD" && !isAdmin)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }

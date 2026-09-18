@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
 
   // Intercept cross-roles
   if (session.role === "LANDLORD") {
-    redirect("/landlord/onboarding");
+    redirect(session.onboardingCompleted ? "/dashboard/landlord" : "/landlord/onboarding");
   } else if (session.role !== "STUDENT") {
     redirect(getRoleDashboardPath(session.role));
   }

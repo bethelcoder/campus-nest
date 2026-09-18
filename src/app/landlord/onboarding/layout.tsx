@@ -8,7 +8,7 @@ export default async function LandlordOnboardingLayout({ children }: { children:
   if (!session) redirect("/landlord/login?next=/landlord/onboarding");
 
   if (session.role === "STUDENT") {
-    redirect("/onboarding");
+    redirect(session.onboardingCompleted ? "/dashboard/student" : "/onboarding");
   } else if (session.role !== "LANDLORD") {
     redirect(getRoleDashboardPath(session.role));
   }

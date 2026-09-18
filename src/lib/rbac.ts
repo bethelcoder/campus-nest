@@ -12,7 +12,6 @@ export function getRoleDashboardPath(role?: string | null): string {
     case "SRC_REPRESENTATIVE":
       return "/dashboard/src";
     case "ADMIN":
-    case "UNIVERSITY_ADMIN":
       return "/dashboard/admin";
     default:
       return "/";
@@ -23,7 +22,7 @@ export function getRoleLoginPath(role?: string | null, next?: string): string {
   let base = "/login";
   if (role === "LANDLORD") base = "/landlord/login";
   else if (role === "SRC_REPRESENTATIVE") base = "/src/login";
-  else if (role === "ADMIN" || role === "UNIVERSITY_ADMIN") base = "/login";
+  else if (role === "ADMIN") base = "/login";
 
   if (next) {
     return `${base}?next=${encodeURIComponent(next)}`;

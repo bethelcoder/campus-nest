@@ -10,7 +10,7 @@ const endorseSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  const isAdmin = session?.role === "ADMIN" || (session?.role as string) === "UNIVERSITY_ADMIN";
+  const isAdmin = session?.role === "ADMIN";
   if (!session || !isAdmin) {
     return NextResponse.json({ error: "Only an admin can endorse letters" }, { status: 403 });
   }

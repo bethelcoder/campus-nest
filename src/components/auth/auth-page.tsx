@@ -227,7 +227,6 @@ function LoginForm({ role }: { role: Role }) {
         STUDENT: "/dashboard/student",
         LANDLORD: "/dashboard/landlord",
         ADMIN: "/dashboard/admin",
-        UNIVERSITY_ADMIN: "/dashboard/admin",
         SRC_REPRESENTATIVE: "/dashboard/src",
       };
 
@@ -242,7 +241,7 @@ function LoginForm({ role }: { role: Role }) {
           targetUrl = next;
         } else if (userRole === "SRC_REPRESENTATIVE" && (next.startsWith("/dashboard/src") || next.startsWith("/src"))) {
           targetUrl = next;
-        } else if ((userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN") && (next.startsWith("/dashboard/admin") || next.startsWith("/admin"))) {
+        } else if (userRole === "ADMIN" && (next.startsWith("/dashboard/admin") || next.startsWith("/admin"))) {
           targetUrl = next;
         }
       }
