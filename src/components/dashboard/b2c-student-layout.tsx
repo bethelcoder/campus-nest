@@ -84,7 +84,7 @@ export default function B2cStudentLayout({
   const complianceNavItems = [
     { label: "Funding & Bursary", href: "/dashboard/student/funding", icon: GraduationCapIcon, badge: undefined },
   
-    { label: "QR Funder Letter", href: "/dashboard/student/funder-letter", icon: FileTextIcon, badge: undefined },
+    { label: "Verification Letter-Proof", href: "/dashboard/student/funder-letter", icon: FileTextIcon, badge: undefined },
   ];
 
   const safetyNavItems = [
@@ -274,14 +274,14 @@ export default function B2cStudentLayout({
         {/* Bottom Settings */}
         <div className={`pt-2 border-t border-[#E5E7EB]/60 mt-auto ${sidebarCollapsed ? "flex justify-center" : ""}`}>
           <Link
-            href="/dashboard/student#settings"
-            title={sidebarCollapsed ? "Settings" : undefined}
+            href="/dashboard/student/manage-profile"
+            title={sidebarCollapsed ? "Manage Profile" : undefined}
             className={`group flex items-center ${
               sidebarCollapsed ? "justify-center px-1.5 py-1" : "gap-2.5 px-2.5 py-1"
             } rounded-lg text-[13px] transition-all !text-black font-medium hover:bg-black/[0.04] border border-transparent`}
           >
             <SettingsIcon size={17} className="shrink-0 !text-black" />
-            {!sidebarCollapsed && <span className="tracking-[-0.01em]">Settings</span>}
+            {!sidebarCollapsed && <span className="tracking-[-0.01em]">Manage Profile</span>}
           </Link>
         </div>
       </aside>

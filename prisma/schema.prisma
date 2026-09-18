@@ -128,6 +128,9 @@ model StudentProfile {
   emergencyContactName         String?
   emergencyContactPhone        String?
   emergencyContactRelationship String?
+  emergencyContact2Name         String?
+  emergencyContact2Phone        String?
+  emergencyContact2Relationship String?
   currentAddress               String?
   city                         String?
   province                     String?
