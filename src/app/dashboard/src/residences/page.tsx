@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cSrcLayout from "@/components/dashboard/b2c-src-layout";
 import {
   LuBuilding2,
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function SrcResidencesPage() {
   const session = await getSession();
   if (!session) redirect("/src/login?next=/dashboard/src/residences");
-  if (session.role !== "SRC_REPRESENTATIVE") redirect("/");
+  if (session.role !== "SRC_REPRESENTATIVE") redirect(getRoleDashboardPath(session.role));
 
   const [dbUser, properties, openReportsCount] = await Promise.all([
     prisma.user.findUnique({

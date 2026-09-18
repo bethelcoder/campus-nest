@@ -226,10 +226,28 @@ function LoginForm({ role }: { role: Role }) {
       const roleHome: Record<string, string> = {
         STUDENT: "/dashboard/student",
         LANDLORD: "/dashboard/landlord",
-        UNIVERSITY_ADMIN: "/admin/letters",
+        ADMIN: "/dashboard/admin",
+        UNIVERSITY_ADMIN: "/dashboard/admin",
         SRC_REPRESENTATIVE: "/dashboard/src",
       };
-      router.push(next ?? roleHome[data.user.role] ?? "/");
+
+      const userRole = data.user.role;
+      let targetUrl = roleHome[userRole] || "/";
+
+      // Validate next parameter belongs to this user's role before trusting it
+      if (next) {
+        if (userRole === "STUDENT" && (next.startsWith("/dashboard/student") || next.startsWith("/onboarding"))) {
+          targetUrl = next;
+        } else if (userRole === "LANDLORD" && (next.startsWith("/dashboard/landlord") || next.startsWith("/landlord"))) {
+          targetUrl = next;
+        } else if (userRole === "SRC_REPRESENTATIVE" && (next.startsWith("/dashboard/src") || next.startsWith("/src"))) {
+          targetUrl = next;
+        } else if ((userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN") && (next.startsWith("/dashboard/admin") || next.startsWith("/admin"))) {
+          targetUrl = next;
+        }
+      }
+
+      router.push(targetUrl);
     } finally {
       setLoading(false);
     }

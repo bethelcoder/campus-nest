@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
 export interface NavbarProps {
-  userRole?: "STUDENT" | "LANDLORD" | "UNIVERSITY_ADMIN" | "SRC_REPRESENTATIVE" | null;
+  userRole?: "STUDENT" | "LANDLORD" | "ADMIN" | "UNIVERSITY_ADMIN" | "SRC_REPRESENTATIVE" | null;
   userName?: string | null;
 }
 
@@ -48,8 +48,9 @@ export function Navbar({ userRole, userName }: NavbarProps) {
         return <Badge variant="info" size="sm" icon={<GraduationCap className="w-3 h-3 mr-1" />}>Student</Badge>;
       case "LANDLORD":
         return <Badge variant="success" size="sm" icon={<Building2 className="w-3 h-3 mr-1" />}>Landlord / Operator</Badge>;
+      case "ADMIN":
       case "UNIVERSITY_ADMIN":
-        return <Badge variant="navy" size="sm" icon={<Shield className="w-3 h-3 mr-1" />}>University Admin</Badge>;
+        return <Badge variant="navy" size="sm" icon={<Shield className="w-3 h-3 mr-1" />}>Platform Admin</Badge>;
       case "SRC_REPRESENTATIVE":
         return <Badge variant="purple" size="sm" icon={<Scale className="w-3 h-3 mr-1" />}>SRC Council</Badge>;
       default:
@@ -175,7 +176,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                 </>
               )}
 
-              {userRole === "UNIVERSITY_ADMIN" && (
+              {(userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN") && (
                 <>
                   <Link
                     href="/dashboard/admin"
@@ -184,7 +185,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                     Admin Console
                   </Link>
                   <Link
-                    href="/admin"
+                    href="/admin/letters"
                     className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
                   >
                     Verification Queue
@@ -236,7 +237,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                             ? "/dashboard/student"
                             : userRole === "LANDLORD"
                             ? "/dashboard/landlord"
-                            : userRole === "UNIVERSITY_ADMIN"
+                            : userRole === "ADMIN" || userRole === "UNIVERSITY_ADMIN"
                             ? "/dashboard/admin"
                             : "/dashboard/src"
                         }

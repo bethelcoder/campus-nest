@@ -41,16 +41,28 @@ async function main() {
   `).catch(e => console.log("Note idDocumentName:", e.message));
 
   await prisma.$executeRawUnsafe(`
-    ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "idDocumentCertified" BOOLEAN DEFAULT false;
-  `).catch(e => console.log("Note idDocumentCertified:", e.message));
-
-  await prisma.$executeRawUnsafe(`
     ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "idCertificationDate" TIMESTAMP(3);
   `).catch(e => console.log("Note idCertificationDate:", e.message));
 
   await prisma.$executeRawUnsafe(`
     ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "monthlyBudget" DECIMAL(65,30);
   `).catch(e => console.log("Note monthlyBudget:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "proofOfRegistrationName" TEXT;
+  `).catch(e => console.log("Note proofOfRegistrationName:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "emergencyContact2Name" TEXT;
+  `).catch(e => console.log("Note emergencyContact2Name:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "emergencyContact2Phone" TEXT;
+  `).catch(e => console.log("Note emergencyContact2Phone:", e.message));
+
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE "StudentProfile" ADD COLUMN IF NOT EXISTS "emergencyContact2Relationship" TEXT;
+  `).catch(e => console.log("Note emergencyContact2Relationship:", e.message));
 
   // 3. Tenancy table updates (Room allocation & custom rent)
   await prisma.$executeRawUnsafe(`

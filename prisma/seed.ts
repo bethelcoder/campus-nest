@@ -21,7 +21,7 @@ async function main() {
     where: { email: "admin@wits.ac.za" },
     update: {},
     create: {
-      role: "UNIVERSITY_ADMIN",
+      role: "ADMIN",
       name: "Thandiwe",
       surname: "Mokoena",
       email: "admin@wits.ac.za",

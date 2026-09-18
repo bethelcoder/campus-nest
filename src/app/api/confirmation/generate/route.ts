@@ -14,7 +14,8 @@ const generateSchema = z.object({
 // ever be generated from data the server itself has confirmed.
 export async function POST(req: NextRequest) {
   const session = await getSession();
-  if (!session || (session.role !== "LANDLORD" && session.role !== "UNIVERSITY_ADMIN")) {
+  const isAdmin = session?.role === "ADMIN" || (session?.role as string) === "UNIVERSITY_ADMIN";
+  if (!session || (session.role !== "LANDLORD" && !isAdmin)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

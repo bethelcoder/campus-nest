@@ -1,5 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
 import StudentSetupActionGrid from "@/components/dashboard/student-setup-action-grid";
 
@@ -7,37 +9,34 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentDashboardPage() {
   const session = await getSession();
-
-  let user = {
-    name: "Lerato",
-    surname: "Nkosi",
-    email: "lerato.nkosi@students.wits.ac.za",
-    universityEmail: "lerato.nkosi@students.wits.ac.za",
-    studentNumber: "2489102",
-    universityName: "University of the Witwatersrand (Wits)",
-    fundingType: "NSFAS",
-  };
-
-  if (session) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.sub },
-      include: {
-        studentProfile: true,
-      },
-    });
-
-    if (dbUser) {
-      user = {
-        name: dbUser.name,
-        surname: dbUser.surname,
-        email: dbUser.email,
-        universityEmail: dbUser.universityEmail || dbUser.email,
-        studentNumber: dbUser.studentProfile?.studentNumber || "2489102",
-        universityName: dbUser.studentProfile?.universityName || "University of the Witwatersrand (Wits)",
-        fundingType: dbUser.studentProfile?.fundingType || "NSFAS",
-      };
-    }
+  if (!session) {
+    redirect("/login?next=/dashboard/student");
   }
+
+  if (session.role !== "STUDENT") {
+    redirect(getRoleDashboardPath(session.role));
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.sub },
+    include: {
+      studentProfile: true,
+    },
+  });
+
+  if (!dbUser) {
+    redirect("/login");
+  }
+
+  const user = {
+    name: dbUser.name,
+    surname: dbUser.surname,
+    email: dbUser.email,
+    universityEmail: dbUser.universityEmail || dbUser.email,
+    studentNumber: dbUser.studentProfile?.studentNumber || "",
+    universityName: dbUser.studentProfile?.universityName || "Higher Education Institution",
+    fundingType: dbUser.studentProfile?.fundingType || "NSFAS",
+  };
 
   return (
     <B2cStudentLayout activeTab="Home" user={user}>
