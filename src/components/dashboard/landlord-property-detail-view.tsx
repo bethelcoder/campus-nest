@@ -36,6 +36,7 @@ import {
 } from "react-icons/lu";
 import { extractRoomsFromProperty, AMENITY_METADATA, ROOM_FEATURE_LABELS, type ParsedRoom } from "@/lib/rooms";
 import { getPublicMediaUrl } from "@/lib/media";
+import PropertyComplianceVault from "@/components/dashboard/property-compliance-vault";
 
 interface LandlordPropertyDetailViewProps {
   property: any;
@@ -1048,73 +1049,82 @@ export default function LandlordPropertyDetailView({
         </div>
       )}
 
-      {/* ================= TAB 6: 13-POINT SAFETY AUDIT ================= */}
+      {/* ================= TAB 6: 13-POINT SAFETY AUDIT & COMPLIANCE VAULT ================= */}
       {activeViewTab === "safety" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">13-Point Municipal Safety Inspection</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Standard municipal checklist required for university accreditation and NSFAS tenancy confirmation.
-              </p>
+        <div className="space-y-6">
+          {/* Regulatory Certificate Vault */}
+          <PropertyComplianceVault
+            propertyId={property.id}
+            initialDocs={property.complianceDocs || []}
+          />
+
+          {/* 13-Point Checklist */}
+          <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">13-Point Municipal Safety Inspection</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Standard municipal checklist required for university accreditation and NSFAS tenancy confirmation.
+                </p>
+              </div>
+
+              {safetyScoreNum && (
+                <div className="p-3 px-4 rounded-xl bg-gradient-to-r from-emerald-900 to-teal-900 text-white flex items-center gap-3 shrink-0">
+                  <LuShieldCheck className="w-5 h-5 text-emerald-400" />
+                  <div>
+                    <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider block">
+                      Accreditation Score
+                    </span>
+                    <span className="text-base font-extrabold text-white">
+                      {safetyScoreNum} / 10
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {safetyScoreNum && (
-              <div className="p-3 px-4 rounded-xl bg-gradient-to-r from-emerald-900 to-teal-900 text-white flex items-center gap-3 shrink-0">
-                <LuShieldCheck className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider block">
-                    Accreditation Score
-                  </span>
-                  <span className="text-base font-extrabold text-white">
-                    {safetyScoreNum} / 10
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+            <div className="space-y-4">
+              {Object.entries(checklistByCategory).map(([category, items]: [string, any]) => (
+                <div key={category} className="rounded-xl border border-gray-200 p-4 space-y-3 bg-[#F8FAFC]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                    {category.replace("_", " ")}
+                  </h3>
+                  <div className="space-y-2">
+                    {items.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-gray-100 text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                              item.passed === true
+                                ? "bg-emerald-100 text-emerald-700"
+                                : item.passed === false
+                                ? "bg-rose-100 text-rose-700"
+                                : "bg-gray-100 text-gray-400"
+                            }`}
+                          >
+                            {item.passed === true ? "✓" : item.passed === false ? "✕" : "○"}
+                          </span>
+                          <span className="font-semibold text-gray-800">{item.label}</span>
+                        </div>
 
-          <div className="space-y-4">
-            {Object.entries(checklistByCategory).map(([category, items]: [string, any]) => (
-              <div key={category} className="rounded-xl border border-gray-200 p-4 space-y-3 bg-[#F8FAFC]">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                  {category.replace("_", " ")}
-                </h3>
-                <div className="space-y-2">
-                  {items.map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-gray-100 text-xs"
-                    >
-                      <div className="flex items-center gap-2.5">
                         <span
-                          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                             item.passed === true
-                              ? "bg-emerald-100 text-emerald-700"
-                              : item.passed === false
-                              ? "bg-rose-100 text-rose-700"
-                              : "bg-gray-100 text-gray-400"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-rose-50 text-rose-700 border border-rose-200"
                           }`}
                         >
-                          {item.passed === true ? "✓" : item.passed === false ? "✕" : "○"}
+                          {item.passed === true ? "Passed" : "Action Required"}
                         </span>
-                        <span className="font-semibold text-gray-800">{item.label}</span>
                       </div>
-
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                          item.passed === true
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
-                        }`}
-                      >
-                        {item.passed === true ? "Passed" : "Action Required"}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}

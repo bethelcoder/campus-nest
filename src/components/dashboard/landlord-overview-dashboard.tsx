@@ -637,6 +637,65 @@ export default function LandlordOverviewDashboard({
         </div>
       </div>
 
+      {/* Priority Action-Required Operational Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Strip 1: Applications Action Queue */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-900">Inbound Applications Queue</h3>
+                {stats.pendingInquiries > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                    {stats.pendingInquiries} Action Required
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Review applicant academic dossiers, issue room offers, and sign tenancy agreements.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/landlord/applications"
+            className="px-3.5 py-2 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold transition-all shrink-0 shadow-xs flex items-center gap-1"
+          >
+            <span>Manage</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Strip 2: KYC & Banking Verification */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-[#005F56] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-slate-900">Business KYC &amp; NSFAS Banking</h3>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Direct Payouts
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                CIPC certificate, Tax PIN, Director ID, and verified bank mandate for student funding.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/landlord/verification"
+            className="px-3.5 py-2 rounded-xl border border-slate-300 hover:border-[#005F56] text-slate-700 hover:text-[#005F56] text-xs font-bold transition-all shrink-0 flex items-center gap-1 bg-slate-50"
+          >
+            <span>KYC Vault</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
       {/* ========================================================================= */}
       {/* ROW 2: RECENT STUDENT RESIDENCES TABLE (MATCHING LISTORA MIDDLE TABLE)    */}
       {/* ========================================================================= */}

@@ -83,6 +83,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   const [fetchingDraft, setFetchingDraft] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // Authenticated Read-Only Email
   const [authEmail, setAuthEmail] = useState(initialUser?.email || "student@example.com");
@@ -262,7 +264,8 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   const isStep3Complete = Boolean(
     step3Data.fundingType &&
     step3Data.householdIncomeBracket &&
-    Number(step3Data.monthlyBudget) > 0
+    Number(step3Data.monthlyBudget) > 0 &&
+    termsAccepted
   );
 
   // File Upload Handler with Vercel Blob
@@ -422,7 +425,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   async function handleStep3Submit(e: FormEvent) {
     e.preventDefault();
     if (!isStep3Complete) {
-      setError("Please complete your funding scheme and enter a valid monthly budget.");
+      setError(termsAccepted ? "Please complete your funding scheme and enter a valid monthly budget." : "Please accept the CampusNest Terms and Privacy Policy to continue.");
       return;
     }
     setError(null);
@@ -1068,6 +1071,17 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-5 space-y-4">
+                <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-700 cursor-pointer">
+                  <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                  <span>I have read and agree to the CampusNest <Link href="/terms" target="_blank" className="font-semibold text-emerald-700 underline">Terms and Conditions</Link> and <Link href="/privacy" target="_blank" className="font-semibold text-emerald-700 underline">Privacy Policy</Link>.</span>
+                </label>
+                <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-700 cursor-pointer">
+                  <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                  <span>I consent to receive CampusNest product updates, marketing emails, and relevant partner communications. You can opt out at any time.</span>
+                </label>
               </div>
 
               <div className="pt-4 flex items-center gap-3">
