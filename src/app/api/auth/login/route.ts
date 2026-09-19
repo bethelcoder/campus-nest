@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { email, password } = parsed.data;
+  const email = parsed.data.email.toLowerCase().trim();
+  const { password } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { email } });
   // Deliberately generic error for both "no such user" and "wrong password" —
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) return genericError;
 
-  if (!user.emailVerifiedAt) {
+  // Provisioned admin accounts skip OTP — they are created manually by platform operators.
+  if (!user.emailVerifiedAt && user.role !== "ADMIN") {
     const { generateOtp, hashOtp, otpExpiryDate } = await import("@/lib/otp");
     const { sendOtpEmail } = await import("@/lib/email");
 
@@ -72,22 +74,31 @@ export async function POST(req: NextRequest) {
   }
 
 
+  // Auto-verify provisioned admin accounts on first successful login.
+  let effectiveUser = user;
+  if (user.role === "ADMIN" && !user.emailVerifiedAt) {
+    effectiveUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerifiedAt: new Date(), onboardingCompleted: true },
+    });
+  }
+
   const token = await signSession({
-    sub: user.id,
-    role: user.role,
-    emailVerified: !!user.emailVerifiedAt,
-    onboardingCompleted: user.onboardingCompleted,
-    onboardingStep: user.onboardingStep,
+    sub: effectiveUser.id,
+    role: effectiveUser.role,
+    emailVerified: !!effectiveUser.emailVerifiedAt,
+    onboardingCompleted: effectiveUser.onboardingCompleted,
+    onboardingStep: effectiveUser.onboardingStep,
   });
 
   const res = NextResponse.json({
     user: {
-      id: user.id,
-      role: user.role,
-      name: user.name,
-      email: user.email,
-      onboardingCompleted: user.onboardingCompleted,
-      onboardingStep: user.onboardingStep,
+      id: effectiveUser.id,
+      role: effectiveUser.role,
+      name: effectiveUser.name,
+      email: effectiveUser.email,
+      onboardingCompleted: effectiveUser.onboardingCompleted,
+      onboardingStep: effectiveUser.onboardingStep,
     },
   });
   res.cookies.set(SESSION_COOKIE, token, {

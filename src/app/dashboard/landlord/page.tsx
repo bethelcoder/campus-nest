@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cLandlordLayout from "@/components/dashboard/b2c-landlord-layout";
-import LandlordSetupActionGrid from "@/components/dashboard/landlord-setup-action-grid";
+import LandlordOverviewDashboard from "@/components/dashboard/landlord-overview-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -78,24 +78,11 @@ export default async function LandlordDashboardPage() {
 
   return (
     <B2cLandlordLayout activeTab="Home" user={user} properties={properties}>
-      <div className="space-y-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl flex items-center gap-2">
-            <span>Welcome to CampusNest Operator Portal</span>
-            <span className="inline-block animate-bounce" role="img" aria-label="waving hand">
-              👋
-            </span>
-          </h1>
-          <p className="text-sm md:text-base text-[#64748B]">
-            Hi {user.name}, manage your student housing listings &amp; track 13-point safety accreditation.
-          </p>
-        </div>
-        <LandlordSetupActionGrid
-          user={user}
-          initialProperties={properties}
-          initialApplications={applications}
-        />
-      </div>
+      <LandlordOverviewDashboard
+        user={user}
+        initialProperties={properties}
+        initialApplications={applications}
+      />
     </B2cLandlordLayout>
   );
 }

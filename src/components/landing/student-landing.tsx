@@ -20,6 +20,7 @@ import {
   LuUsers,
   LuSparkles,
 } from "react-icons/lu";
+import { getPublicMediaUrl } from "@/lib/media";
 import Navbar from "./navbar";
 
 export interface PropertyListing {
@@ -31,6 +32,7 @@ export interface PropertyListing {
   bedrooms: number;
   safetyScore: number | string | null;
   distanceToCampus?: number | string | null;
+  images?: string[];
 }
 
 interface StudentLandingProps {
@@ -396,7 +398,7 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
             </div>
           )}
 
-          {filteredProperties.map((p) => {
+          {filteredProperties.map((p, idx) => {
             const score = p.safetyScore !== null ? Number(p.safetyScore) : null;
             const scoreColor =
               score && score >= 9.0
@@ -405,22 +407,32 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                 ? "bg-teal-100 text-teal-800 border-teal-200"
                 : "bg-amber-100 text-amber-800 border-amber-200";
 
+            const slug =
+              p.title ? p.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || p.id : p.id;
+
+            const cardImage =
+              p.images && Array.isArray(p.images) && p.images.length > 0
+                ? getPublicMediaUrl(p.images[0])
+                : "/accomodation.png";
+
             return (
               <Link
                 key={p.id}
-                href={`/properties/${p.id}`}
-                className="group block rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300"
+                href={`/residences/${slug}`}
+                className="group block rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-xl hover:border-[#005F56] transition-all duration-300"
               >
                 {/* Image / Banner Container */}
                 <div className="relative h-48 bg-gradient-to-tr from-gray-900 to-gray-700 overflow-hidden">
-                  <Image
-                    src="/accomodation.png"
+                  <img
+                    src={cardImage}
                     alt={p.title}
-                    width={400}
-                    height={250}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/accomodation.png";
+                    }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                   {/* Safety Score Badge */}
                   {score !== null && (
@@ -442,7 +454,7 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                 {/* Card Details */}
                 <div className="p-5 space-y-3">
                   <div>
-                    <h3 className="font-bold text-base text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                    <h3 className="font-bold text-base text-gray-900 group-hover:text-[#005F56] transition-colors line-clamp-1">
                       {p.title}
                     </h3>
                     <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
@@ -464,7 +476,7 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700">
                         {p.bedrooms} Bed{p.bedrooms > 1 ? "s" : ""}
                       </span>
-                      <span className="text-xs font-bold text-emerald-600 group-hover:translate-x-0.5 transition-transform">
+                      <span className="text-xs font-bold text-[#005F56] group-hover:translate-x-0.5 transition-transform">
                         View →
                       </span>
                     </div>

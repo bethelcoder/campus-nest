@@ -1,4 +1,6 @@
 import { put } from "@vercel/blob";
+import fs from "fs/promises";
+import path from "path";
 
 export interface UploadOptions {
   userId: string;
@@ -17,19 +19,42 @@ export async function uploadToBlob(
   const blobPath = `${options.folder}/${options.userId}-${Date.now()}-${sanitizedName}`;
 
   if (!token) {
-    // Graceful offline development fallback if token is not yet in .env.local
-    console.warn("BLOB_READ_WRITE_TOKEN not set. Providing mock URL for local testing.");
-    return {
-      url: `https://mock-blob.vercel-storage.com/${blobPath}`,
-      pathname: blobPath,
-      contentType: file.type || "application/octet-stream",
-    };
+    // Local development fallback: Save file to public/uploads directory so browser can preview it directly
+    try {
+      const publicUploadsDir = path.join(process.cwd(), "public", "uploads", options.folder);
+      await fs.mkdir(publicUploadsDir, { recursive: true });
+      
+      const fileNameOnDisk = `${options.userId}-${Date.now()}-${sanitizedName}`;
+      const localFilePath = path.join(publicUploadsDir, fileNameOnDisk);
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      await fs.writeFile(localFilePath, buffer);
+
+      const localUrl = `/uploads/${options.folder}/${fileNameOnDisk}`;
+      return {
+        url: localUrl,
+        pathname: localUrl,
+        contentType: file.type || "application/octet-stream",
+      };
+    } catch (fsErr) {
+      console.error("Local file save fallback error:", fsErr);
+      // Data URI fallback if disk write is not accessible
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUri = `data:${file.type || "image/png"};base64,${base64}`;
+      return {
+        url: dataUri,
+        pathname: blobPath,
+        contentType: file.type || "application/octet-stream",
+      };
+    }
   }
 
   // Attempt upload handling both public and private Vercel Blob store configurations automatically
   try {
     const blob = await put(blobPath, file, {
-      access: "private",
+      access: "public",
       token,
       addRandomSuffix: true,
     });
@@ -41,22 +66,6 @@ export async function uploadToBlob(
     };
   } catch (err: any) {
     const msg = err?.message || "";
-    // If the store is configured with public access, retry with public
-    if (msg.includes("Cannot use private access on a public store") || msg.includes("public store")) {
-      const publicBlob = await put(blobPath, file, {
-        access: "public",
-        token,
-        addRandomSuffix: true,
-      });
-
-      return {
-        url: publicBlob.url || publicBlob.downloadUrl,
-        pathname: publicBlob.pathname,
-        contentType: publicBlob.contentType,
-      };
-    }
-    
-    // If error was about public access on private store, retry with private (in case initial try was modified)
     if (msg.includes("Cannot use public access on a private store") || msg.includes("private store")) {
       const privateBlob = await put(blobPath, file, {
         access: "private",

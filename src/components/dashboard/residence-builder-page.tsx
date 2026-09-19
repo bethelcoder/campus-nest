@@ -29,7 +29,23 @@ import {
   LuBath,
   LuLayers,
   LuSlidersHorizontal,
+  LuWifi,
+  LuBookOpen,
+  LuTv,
+  LuUtensils,
+  LuDumbbell,
+  LuWaves,
+  LuCar,
+  LuKey,
+  LuWind,
+  LuSun,
+  LuDroplets,
+  LuLaptop,
+  LuAccessibility,
+  LuX,
+  LuLink,
 } from "react-icons/lu";
+import { getPublicMediaUrl } from "@/lib/media";
 import { STANDARD_CHECKLIST, calculateSafetyScore, type ChecklistTemplateItem } from "@/lib/safety";
 
 export interface RoomTypeItem {
@@ -58,26 +74,26 @@ export interface RoomTypeItem {
 }
 
 export const ROOM_FEATURE_OPTIONS = [
-  { id: "FURNISHED_BED", label: "Bed & Quality Mattress", icon: "🛏️" },
-  { id: "STUDY_DESK", label: "Study Desk & Ergonomic Chair", icon: "📝" },
-  { id: "WARDROBE", label: "Lockable Fitted Wardrobe", icon: "🚪" },
-  { id: "MINI_FRIDGE", label: "In-Room Mini / Bar Fridge", icon: "🧊" },
-  { id: "AIRCON_HEATER", label: "Air Conditioning / Wall Heater", icon: "❄️" },
-  { id: "BALCONY", label: "Private Balcony / View", icon: "🌅" },
-  { id: "PREPAID_ELEC", label: "Prepaid Electricity Meter", icon: "⚡" },
-  { id: "WIFI_AP", label: "High-Speed WiFi / Ethernet AP", icon: "📶" },
-  { id: "KEYLESS_LOCK", label: "Smart Keyless Lock", icon: "🔐" },
-  { id: "ENSUITE_BATH", label: "Private Ensuite Bathroom", icon: "🚿" },
+  { id: "FURNISHED_BED", label: "Bed & Mattress", icon: LuBed },
+  { id: "STUDY_DESK", label: "Study Desk & Chair", icon: LuBookOpen },
+  { id: "WARDROBE", label: "Fitted Wardrobe", icon: LuLock },
+  { id: "MINI_FRIDGE", label: "In-Room Fridge", icon: LuLayers },
+  { id: "AIRCON_HEATER", label: "Aircon / Heater", icon: LuWind },
+  { id: "BALCONY", label: "Private Balcony", icon: LuBuilding2 },
+  { id: "PREPAID_ELEC", label: "Prepaid Meter", icon: LuZap },
+  { id: "WIFI_AP", label: "WiFi Access Point", icon: LuWifi },
+  { id: "KEYLESS_LOCK", label: "Smart Lock", icon: LuKey },
+  { id: "ENSUITE_BATH", label: "Ensuite Bathroom", icon: LuBath },
 ];
 
 export const ROOM_TYPE_PRESETS = [
   {
-    name: "Commune Standard (Singles + Doubles)",
-    description: "Balanced mix of private singles and affordable sharing rooms",
+    name: "Commune Standard",
+    description: "Mix of standard singles and 2-sharing rooms",
     rooms: [
       {
         id: "preset-1",
-        name: "Standard Private Single",
+        name: "Standard Single",
         type: "SINGLE_STANDARD" as const,
         quantity: 2,
         bedsPerRoom: 1,
@@ -93,7 +109,7 @@ export const ROOM_TYPE_PRESETS = [
       },
       {
         id: "preset-2",
-        name: "Deluxe Single Ensuite",
+        name: "Single Ensuite",
         type: "SINGLE_ENSUITE" as const,
         quantity: 1,
         bedsPerRoom: 1,
@@ -103,13 +119,13 @@ export const ROOM_TYPE_PRESETS = [
         sizeSqm: "18",
         isNsfasCapped: false,
         availabilityStatus: "AVAILABLE_NOW" as const,
-        features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "ENSUITE_BATH", "MINI_FRIDGE", "WIFI_AP"],
+        features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "ENSUITE_BATH", "WIFI_AP"],
         photos: [],
         isExpanded: false,
       },
       {
         id: "preset-3",
-        name: "2-Sharing Double Room",
+        name: "2-Sharing Room",
         type: "DOUBLE_SHARING" as const,
         quantity: 2,
         bedsPerRoom: 2,
@@ -126,12 +142,12 @@ export const ROOM_TYPE_PRESETS = [
     ],
   },
   {
-    name: "Purpose-Built Block (Ensuite & Studios)",
-    description: "High-density private and semi-private student accommodation",
+    name: "Purpose-Built Block",
+    description: "Ensuite single rooms and cluster apartments",
     rooms: [
       {
         id: "preset-pb-1",
-        name: "Ensuite Single Studio Room",
+        name: "Studio Single Ensuite",
         type: "SINGLE_ENSUITE" as const,
         quantity: 6,
         bedsPerRoom: 1,
@@ -141,7 +157,7 @@ export const ROOM_TYPE_PRESETS = [
         sizeSqm: "16",
         isNsfasCapped: true,
         availabilityStatus: "AVAILABLE_NOW" as const,
-        features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "ENSUITE_BATH", "WIFI_AP", "PREPAID_ELEC"],
+        features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "ENSUITE_BATH", "WIFI_AP"],
         photos: [],
         isExpanded: true,
       },
@@ -164,12 +180,12 @@ export const ROOM_TYPE_PRESETS = [
     ],
   },
   {
-    name: "NSFAS Capped Direct Residence",
-    description: "Optimized for maximum student placement matching national funding caps",
+    name: "NSFAS Direct Mix",
+    description: "Rooms aligned to national student funding caps",
     rooms: [
       {
         id: "preset-nsfas-1",
-        name: "NSFAS Direct 2-Sharing Bed",
+        name: "NSFAS 2-Sharing Bed",
         type: "DOUBLE_SHARING" as const,
         quantity: 4,
         bedsPerRoom: 2,
@@ -266,47 +282,52 @@ const SA_PROVINCES = [
 
 const AMENITY_CATEGORIES = [
   {
-    category: "Power & Load-Shedding",
+    category: "Power & Load-Shedding Resilience",
     items: [
-      { id: "BACKUP_POWER", label: "Solar Inverter / Battery UPS (WiFi & Lighting during load-shedding)", icon: "⚡" },
-      { id: "GENERATOR", label: "Full Complex Backup Diesel Generator", icon: "🔋" },
+      { id: "BACKUP_POWER", label: "Solar Inverter / Battery UPS (WiFi & Lights during outages)", icon: LuZap },
+      { id: "GENERATOR", label: "Full Complex Backup Generator", icon: LuZap },
     ],
   },
   {
     category: "Water & Utilities",
     items: [
-      { id: "BACKUP_WATER", label: "Backup JoJo Water Tanks + Pressure Pump", icon: "💧" },
-      { id: "SOLAR_GEYSER", label: "Solar / Heat Pump Hot Water System", icon: "☀️" },
-      { id: "WATER_INCLUDED", label: "Water Included in Monthly Rent", icon: "🚿" },
-      { id: "ELEC_INCLUDED", label: "Electricity / Monthly Power Quota Included", icon: "💡" },
+      { id: "BACKUP_WATER", label: "Backup JoJo Water Tanks + Pressure Booster Pump", icon: LuDroplets },
+      { id: "SOLAR_GEYSER", label: "Solar / Heat Pump Central Hot Water", icon: LuSun },
+      { id: "WATER_INCLUDED", label: "Water Included in Rent", icon: LuBath },
+      { id: "ELEC_INCLUDED", label: "Electricity Quota Included", icon: LuZap },
     ],
   },
   {
-    category: "Connectivity & Study",
+    category: "Connectivity & Academic Study",
     items: [
-      { id: "WIFI", label: "Uncapped High-Speed Fibre WiFi (100Mbps+)", icon: "📶" },
-      { id: "STUDY_ROOM", label: "Dedicated Quiet Study Center with Power Sockets", icon: "📚" },
-      { id: "COMPUTER_LAB", label: "Student Computer Lab & Printing Station", icon: "💻" },
+      { id: "WIFI", label: "Uncapped High-Speed Fibre WiFi (100Mbps+)", icon: LuWifi },
+      { id: "STUDY_ROOM", label: "Dedicated Quiet Study Center with Workstations", icon: LuBookOpen },
+      { id: "COMPUTER_LAB", label: "Computer Lab & Printing Station", icon: LuLaptop },
     ],
   },
   {
     category: "Security & Access Control",
     items: [
-      { id: "BIOMETRIC", label: "Biometric Fingerprint / Facial Recognition Access Control", icon: "🔒" },
-      { id: "CCTV", label: "24/7 Monitored CCTV Surveillance System", icon: "📹" },
-      { id: "ARMED_RESPONSE", label: "Electric Perimeter Fencing & Armed Response Link", icon: "🚨" },
-      { id: "GUARD_SECURITY", label: "24-Hour On-Site Security Guard / Caretaker", icon: "👮" },
+      { id: "BIOMETRIC", label: "Biometric Turnstiles / Fingerprint Access", icon: LuKey },
+      { id: "CCTV", label: "24/7 Monitored CCTV Surveillance", icon: LuEye },
+      { id: "ARMED_RESPONSE", label: "Electric Perimeter Fencing & Armed Response Link", icon: LuShieldCheck },
+      { id: "GUARD_SECURITY", label: "24-Hour On-Site Security Guard / Caretaker", icon: LuShieldCheck },
     ],
   },
   {
-    category: "Living, Furnishings & Facilities",
+    category: "Living, Social & Facilities",
     items: [
-      { id: "FURNISHED", label: "Fully Furnished (Bed, Study Desk, Chair, Lockable Wardrobe)", icon: "🛏️" },
-      { id: "LAUNDRY", label: "On-Site Laundry Machines (Washers & Dryers)", icon: "🧺" },
-      { id: "KITCHEN_COMMUNAL", label: "Fully Equipped Communal Kitchen (Stoves, Microwaves, Fridges)", icon: "🍳" },
-      { id: "TV_LOUNGE", label: "Student Social Lounge / TV Room (DSTV/Netflix)", icon: "📺" },
-      { id: "OUTDOOR_BRAAI", label: "Outdoor Courtyard / Braai Area", icon: "🍖" },
-      { id: "FITNESS_GYM", label: "On-Site Student Gym / Fitness Room", icon: "🏋️" },
+      { id: "FURNISHED", label: "Fully Furnished Rooms (Bed, Desk, Wardrobe)", icon: LuBed },
+      { id: "LAUNDRY", label: "On-Site Free Laundry Facility (Washers & Dryers)", icon: LuLayers },
+      { id: "KITCHEN_COMMUNAL", label: "Equipped Communal Kitchens (Stoves, Microwaves, Fridges)", icon: LuUtensils },
+      { id: "TV_LOUNGE", label: "Student Social Lounge / TV Room", icon: LuTv },
+      { id: "OUTDOOR_BRAAI", label: "Outdoor Courtyard / Braai Area", icon: LuFlame },
+      { id: "FITNESS_GYM", label: "On-Site Student Fitness Gym", icon: LuDumbbell },
+      { id: "SWIMMING_POOL", label: "Swimming Pool & Deck Area", icon: LuWaves },
+      { id: "GAMES_ROOM", label: "Games Lounge (Pool Table, Table Tennis)", icon: LuLayers },
+      { id: "PARKING", label: "Secure Student Parking (Vehicle & Bicycle)", icon: LuCar },
+      { id: "CLEANING_SERVICE", label: "Daily Communal Area Cleaning & Waste Removal", icon: LuSparkles },
+      { id: "ACCESSIBILITY", label: "Wheelchair Ramp & Universal Access", icon: LuAccessibility },
     ],
   },
 ];
@@ -321,61 +342,63 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
   // Active Tab View within Builder
   const [activeTab, setActiveTab] = useState<"basics" | "capacity" | "amenities" | "safety" | "media">("basics");
 
-  // Basic Info Form State
+  // Basic Info Form State (Start blank, no prefilled values)
   const [basics, setBasics] = useState({
     title: "",
-    buildingType: "STUDENT_BLOCK", // STUDENT_BLOCK, COMMUNE, COMPLEX, HOSTEL
-    institution: SA_UNIVERSITIES[0].name,
-    campus: SA_UNIVERSITIES[0].campuses[0],
-    distanceToCampus: "0.8",
-    transitMode: "WALKING", // WALKING, SHUTTLE, TAXI
+    buildingType: "STUDENT_BLOCK",
+    institution: "",
+    campus: "",
+    distanceToCampus: "",
+    transitMode: "WALKING",
     streetAddress: "",
     suburb: "",
-    city: "Johannesburg",
+    city: "",
     province: "Gauteng",
     postalCode: "",
     description: "",
   });
 
-  // Room Configuration & Capacity State
+  // Live Student Public URL State (Clean slug: /residences/name)
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  const publicListingSlug = useMemo(() => {
+    const title = (basics.title || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return title ? `/residences/${title}` : "/residences/your-residence-name";
+  }, [basics.title]);
+
+  const publicListingUrl = useMemo(() => {
+    return `https://campusnest.co.za${publicListingSlug}`;
+  }, [publicListingSlug]);
+
+  const handleCopyUrl = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(publicListingUrl);
+      setCopiedUrl(true);
+      setTimeout(() => setCopiedUrl(false), 2500);
+    }
+  };
+
+  // Room Configuration & Capacity State (Start with 1 blank room)
   const [rooms, setRooms] = useState<RoomTypeItem[]>([
     {
       id: "room-1",
-      name: "Standard Private Single",
+      name: "",
       type: "SINGLE_STANDARD",
-      quantity: 2,
+      quantity: 1,
       bedsPerRoom: 1,
       bathroomType: "SHARED_1_2",
-      monthlyPrice: 5200,
-      deposit: 5200,
-      sizeSqm: "14",
-      isNsfasCapped: true,
+      monthlyPrice: 0,
+      deposit: 0,
+      sizeSqm: "",
+      isNsfasCapped: false,
       availabilityStatus: "AVAILABLE_NOW",
-      features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "WIFI_AP"],
+      features: [],
       photos: [],
       isExpanded: true,
     },
-    {
-      id: "room-2",
-      name: "2-Sharing Double Room",
-      type: "DOUBLE_SHARING",
-      quantity: 4,
-      bedsPerRoom: 2,
-      bathroomType: "SHARED_COMMUNAL",
-      monthlyPrice: 4600,
-      deposit: 4600,
-      sizeSqm: "22",
-      isNsfasCapped: true,
-      availabilityStatus: "AVAILABLE_NOW",
-      features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "WIFI_AP"],
-      photos: [],
-      isExpanded: false,
-    },
   ]);
 
-  const [totalBathrooms, setTotalBathrooms] = useState("3");
-  const [generalDeposit, setGeneralDeposit] = useState("4600");
-  const [nsfasEligible, setNsfasEligible] = useState(true);
+  const [isNsfasAccredited, setIsNsfasAccredited] = useState(false);
   const [uploadingRoomPhotoId, setUploadingRoomPhotoId] = useState<string | null>(null);
 
   // Dynamic Building Capacity Metrics
@@ -405,8 +428,8 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     if (minPrice === Infinity) minPrice = 0;
 
     return {
-      totalBeds: Math.max(1, totalBeds),
-      totalBedrooms: Math.max(1, totalBedrooms),
+      totalBeds: Math.max(0, totalBeds),
+      totalBedrooms: Math.max(0, totalBedrooms),
       grossRevenue,
       minPrice,
       maxPrice: maxPrice || minPrice,
@@ -420,17 +443,17 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
       ...prev,
       {
         id: newId,
-        name: `Room Type ${prev.length + 1}`,
+        name: "",
         type: "SINGLE_STANDARD",
         quantity: 1,
         bedsPerRoom: 1,
         bathroomType: "SHARED_1_2",
-        monthlyPrice: 4800,
-        deposit: 4800,
-        sizeSqm: "15",
-        isNsfasCapped: true,
+        monthlyPrice: 0,
+        deposit: 0,
+        sizeSqm: "",
+        isNsfasCapped: false,
         availabilityStatus: "AVAILABLE_NOW",
-        features: ["FURNISHED_BED", "STUDY_DESK", "WARDROBE", "WIFI_AP"],
+        features: [],
         photos: [],
         isExpanded: true,
       },
@@ -444,7 +467,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     const copy: RoomTypeItem = {
       ...existing,
       id: newId,
-      name: `${existing.name} (Copy)`,
+      name: existing.name ? `${existing.name} (Copy)` : "",
       photos: [...existing.photos],
       features: [...existing.features],
       isExpanded: true,
@@ -504,6 +527,14 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Provide instant local object URL preview for immediate visual feedback
+    const localPreviewUrl = URL.createObjectURL(file);
+    setRooms((prev) =>
+      prev.map((r) =>
+        r.id === roomId ? { ...r, photos: [...r.photos, localPreviewUrl] } : r
+      )
+    );
+
     setUploadingRoomPhotoId(roomId);
     setError(null);
 
@@ -522,14 +553,28 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
         throw new Error(data.error || "Failed to upload room photo");
       }
 
+      // Replace local preview URL with persistent uploaded URL
       setRooms((prev) =>
         prev.map((r) =>
-          r.id === roomId ? { ...r, photos: [...r.photos, data.url] } : r
+          r.id === roomId
+            ? {
+                ...r,
+                photos: r.photos.map((p) => (p === localPreviewUrl ? data.url : p)),
+              }
+            : r
         )
       );
 
       setPhotos((prev) => (prev.includes(data.url) ? prev : [...prev, data.url]));
     } catch (err: any) {
+      // Revert local preview if upload failed
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === roomId
+            ? { ...r, photos: r.photos.filter((p) => p !== localPreviewUrl) }
+            : r
+        )
+      );
       setError(err.message || "Room photo upload failed");
     } finally {
       setUploadingRoomPhotoId(null);
@@ -548,20 +593,10 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     );
   };
 
-  // Selected Amenities
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
-    "BACKUP_POWER",
-    "BACKUP_WATER",
-    "WIFI",
-    "STUDY_ROOM",
-    "BIOMETRIC",
-    "CCTV",
-    "FURNISHED",
-    "LAUNDRY",
-    "WATER_INCLUDED",
-  ]);
+  // Selected Amenities (Starts completely empty)
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
-  // 13-Point Checklist State
+  // 13-Point Checklist State (ALL start as null / unanswered)
   const [checklistAnswers, setChecklistAnswers] = useState<
     Array<{
       category: ChecklistTemplateItem["category"];
@@ -575,7 +610,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
       category: item.category,
       label: item.label,
       weight: item.weight,
-      passed: true,
+      passed: null,
       notes: "",
     }))
   );
@@ -584,15 +619,19 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // Live Safety Score Calculation
+  // Live Safety Score Calculation (Only when evaluated)
   const liveSafetyScore = useMemo(() => {
     return calculateSafetyScore(checklistAnswers);
+  }, [checklistAnswers]);
+
+  const checklistAnsweredCount = useMemo(() => {
+    return checklistAnswers.filter((item) => item.passed !== null).length;
   }, [checklistAnswers]);
 
   // Selected University Campuses
   const currentUniversityCampuses = useMemo(() => {
     const uni = SA_UNIVERSITIES.find((u) => u.name === basics.institution);
-    return uni ? uni.campuses : ["Main Campus"];
+    return uni ? uni.campuses : [];
   }, [basics.institution]);
 
   const toggleAmenity = (id: string) => {
@@ -613,6 +652,10 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Instant local preview
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPhotos((prev) => [...prev, localPreviewUrl]);
+
     setUploadingPhoto(true);
     setError(null);
 
@@ -631,8 +674,9 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
         throw new Error(data.error || "Failed to upload photo");
       }
 
-      setPhotos((prev) => [...prev, data.url]);
+      setPhotos((prev) => prev.map((p) => (p === localPreviewUrl ? data.url : p)));
     } catch (err: any) {
+      setPhotos((prev) => prev.filter((p) => p !== localPreviewUrl));
       setError(err.message || "Photo upload failed");
     } finally {
       setUploadingPhoto(false);
@@ -653,14 +697,18 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
   const isCapacityValid =
     rooms.length > 0 &&
     rooms.every(
-      (r) => Number(r.quantity) >= 1 && Number(r.monthlyPrice) > 0 && Number(r.bedsPerRoom) >= 1
+      (r) =>
+        r.name.trim().length > 0 &&
+        Number(r.quantity) >= 1 &&
+        Number(r.monthlyPrice) > 0 &&
+        Number(r.bedsPerRoom) >= 1
     );
 
   const isFormValid = isBasicsValid && isCapacityValid;
 
   const handlePublish = async () => {
     if (!isFormValid) {
-      setError("Please fill in all mandatory residence basics and room configurations.");
+      setError("Please fill in the required residence details and room configurations.");
       if (!isBasicsValid) setActiveTab("basics");
       else if (!isCapacityValid) setActiveTab("capacity");
       return;
@@ -670,7 +718,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     setError(null);
 
     try {
-      const basePrice = buildingMetrics.minPrice || 4800;
+      const basePrice = buildingMetrics.minPrice || 0;
 
       // Build structured room summary text for description
       const roomSummaryLines = rooms.map((r) => {
@@ -700,22 +748,20 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
 
         return `• ${r.name || typeLabel} (${typeLabel}, ${bathLabel}): R${Number(
           r.monthlyPrice
-        ).toLocaleString()}/mo per bed (${r.quantity} room${
+        ).toLocaleString()}/mo per bed (${r.quantity} unit${
           r.quantity > 1 ? "s" : ""
-        }, ${r.quantity * r.bedsPerRoom} total beds)${
-          r.isNsfasCapped ? " [NSFAS Accredited Cap]" : ""
-        }`;
+        }, ${r.quantity * r.bedsPerRoom} total bed${
+          r.quantity * r.bedsPerRoom > 1 ? "s" : ""
+        })${r.isNsfasCapped ? " [NSFAS Capped]" : ""}`;
       });
 
       const detailedDescription = basics.description
-        ? `${basics.description}\n\n🏠 Room Configurations & Rates:\n${roomSummaryLines.join(
+        ? `${basics.description}\n\nRoom Inventory & Rates:\n${roomSummaryLines.join(
             "\n"
           )}`
-        : `Accredited student housing located in ${basics.suburb}, ${Number(
-            basics.distanceToCampus
-          )}km from ${basics.institution} (${basics.campus}).\n\n🏠 Room Configurations & Rates:\n${roomSummaryLines.join(
-            "\n"
-          )}`;
+        : `Student housing located in ${basics.suburb}, ${basics.city}.${
+            basics.institution ? ` Nearest institution: ${basics.institution} (${basics.campus}).` : ""
+          }\n\nRoom Inventory & Rates:\n${roomSummaryLines.join("\n")}`;
 
       // Collect all room photos and property photos
       const allRoomPhotos = rooms.flatMap((r) => r.photos);
@@ -727,12 +773,13 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
         suburb: basics.suburb,
         city: basics.city,
         priceMonthly: basePrice,
-        depositAmount: generalDeposit ? Number(generalDeposit) : undefined,
-        bedrooms: buildingMetrics.totalBedrooms,
-        bathrooms: totalBathrooms ? Number(totalBathrooms) : 1,
-        maxOccupants: buildingMetrics.totalBeds,
+        bedrooms: buildingMetrics.totalBedrooms || 1,
+        bathrooms: 1,
+        maxOccupants: buildingMetrics.totalBeds || 1,
         description: detailedDescription,
-        amenities: selectedAmenities,
+        amenities: isNsfasAccredited
+          ? Array.from(new Set([...selectedAmenities, "NSFAS_ACCREDITED"]))
+          : selectedAmenities,
         distanceToCampus: basics.distanceToCampus ? Number(basics.distanceToCampus) : undefined,
         images: combinedPhotos,
         checklistAnswers,
@@ -762,45 +809,36 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16 font-poppins">
       
-      {/* Top Breadcrumb & Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-xs">
+      {/* Top Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-xl border border-slate-200 bg-white shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <Link
               href="/landlord/properties"
-              className="text-xs font-semibold text-[#64748B] hover:text-gray-900 flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors"
             >
               <LuChevronLeft className="w-3.5 h-3.5" />
               <span>Back to Residences</span>
             </Link>
-            <span className="text-gray-300">•</span>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              New Residence Listing
+            <span className="text-slate-300">/</span>
+            <span className="text-xs font-semibold text-slate-500">
+              New Listing
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            {basics.title ? basics.title : "Register Student Residence"}
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {basics.title ? basics.title : "Add New Student Residence"}
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Configure residence infrastructure, capacity, NSFAS/bursary pricing, and 13-point safety accreditation.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Provide property details, room configurations, living amenities, utilities, and safety inspection.
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <div className="p-2 px-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-right">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-              Safety Rating
-            </span>
-            <span className="text-base font-extrabold text-emerald-700">
-              {liveSafetyScore !== null ? `${liveSafetyScore.toFixed(1)} / 10` : "-- / 10"}
-            </span>
-          </div>
-
           <button
             type="button"
             disabled={saving || success}
             onClick={handlePublish}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#005F56] hover:bg-[#004d46] disabled:opacity-50 text-white px-5 py-2.5 text-xs font-bold transition-all cursor-pointer shadow-xs"
           >
             {saving ? (
               <>
@@ -815,7 +853,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             ) : (
               <>
                 <LuSparkles className="w-4 h-4" />
-                <span>Publish Accredited Residence</span>
+                <span>Publish Residence</span>
               </>
             )}
           </button>
@@ -823,89 +861,127 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
       </div>
 
       {error && (
-        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5 animate-fadeIn">
-          <LuInfo className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
+          <LuInfo className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs overflow-x-auto no-scrollbar">
+      {/* Modern High-Contrast Tabs Navigation */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1 rounded-xl bg-slate-100 border border-slate-200">
         {[
-          { id: "basics" as const, label: "1. Identity & Location", icon: <LuBuilding2 className="w-3.5 h-3.5" /> },
-          { id: "capacity" as const, label: "2. Capacity & Rates", icon: <LuBed className="w-3.5 h-3.5" /> },
-          { id: "amenities" as const, label: "3. Living Amenities", icon: <LuZap className="w-3.5 h-3.5" /> },
-          { id: "safety" as const, label: "4. 13-Point Safety Audit", icon: <LuShieldCheck className="w-3.5 h-3.5" /> },
-          { id: "media" as const, label: "5. Photos & Compliance", icon: <LuUpload className="w-3.5 h-3.5" /> },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </button>
-        ))}
+          { id: "basics" as const, label: "1. Identity & URL", icon: LuBuilding2 },
+          { id: "capacity" as const, label: "2. Room Types & Rates", icon: LuBed },
+          { id: "amenities" as const, label: "3. Amenities & Utilities", icon: LuZap },
+          { id: "safety" as const, label: "4. Safety Audit", icon: LuShieldCheck },
+          { id: "media" as const, label: "5. Photos & Media", icon: LuUpload },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? "bg-[#005F56] text-white shadow-xs"
+                  : "bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ================= TAB 1: IDENTITY & LOCATION ================= */}
       {activeTab === "basics" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-base font-bold text-gray-900">Residence Identity &amp; Institution Proximity</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Specify your property&apos;s title, classification, and targeted university campuses.
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="text-base font-bold text-slate-900">Residence Identity &amp; Location</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Enter your property title, classification, location, and student application link.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Residence / Building Title <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                Residence / Building Title <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={basics.title}
                 onChange={(e) => setBasics({ ...basics, title: e.target.value })}
-                placeholder="e.g. Apex Student Manor, Braamfontein Loft"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                placeholder="e.g. Yale Village, Apex Student Manor"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 Property Classification
               </label>
               <select
                 value={basics.buildingType}
                 onChange={(e) => setBasics({ ...basics, buildingType: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800 bg-white"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 bg-white"
               >
                 <option value="STUDENT_BLOCK">Dedicated Student Apartment Block</option>
-                <option value="COMMUNE">Accredited Student Commune / House</option>
-                <option value="COMPLEX">Multi-Unit Residential Complex</option>
-                <option value="HOSTEL">Full Student Residence / Hostel</option>
+                <option value="COMMUNE">Student Commune / House</option>
+                <option value="COMPLEX">Residential Complex</option>
+                <option value="HOSTEL">Student Residence / Hostel</option>
               </select>
             </div>
           </div>
 
+          {/* Student Public URL Preview Card */}
+          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <LuLink className="w-3.5 h-3.5 text-[#005F56]" />
+                Public Student Application URL
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:border-[#005F56] hover:text-[#005F56] transition-all cursor-pointer"
+              >
+                {copiedUrl ? (
+                  <>
+                    <LuCheck className="w-3.5 h-3.5 text-[#005F56]" />
+                    <span className="text-[#005F56]">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <LuCopy className="w-3.5 h-3.5" />
+                    <span>Copy URL</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="p-2.5 rounded-md bg-white border border-slate-300 font-mono text-xs text-slate-900 select-all overflow-x-auto break-all">
+              {publicListingUrl}
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Students and university bursars will access this live link to view available rooms, facilities, and submit direct applications.
+            </p>
+          </div>
+
           {/* Institution Selection */}
-          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600">
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Campus Proximity &amp; Transit Options
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Target Higher Education Institution
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Nearest Higher Education Institution
                 </label>
                 <select
                   value={basics.institution}
@@ -914,11 +990,12 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                     setBasics({
                       ...basics,
                       institution: e.target.value,
-                      campus: uni ? uni.campuses[0] : "Main Campus",
+                      campus: uni && uni.campuses.length > 0 ? uni.campuses[0] : "",
                     });
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 bg-white"
                 >
+                  <option value="">-- Select Institution (Optional) --</option>
                   {SA_UNIVERSITIES.map((u) => (
                     <option key={u.name} value={u.name}>
                       {u.name}
@@ -928,14 +1005,16 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Nearest Campus / Faculty Location
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Campus / Faculty Location
                 </label>
                 <select
                   value={basics.campus}
+                  disabled={!basics.institution}
                   onChange={(e) => setBasics({ ...basics, campus: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 bg-white disabled:opacity-50"
                 >
+                  <option value="">-- Select Campus --</option>
                   {currentUniversityCampuses.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -947,7 +1026,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Distance to Campus Gates (km)
                 </label>
                 <input
@@ -957,38 +1036,38 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                   value={basics.distanceToCampus}
                   onChange={(e) => setBasics({ ...basics, distanceToCampus: e.target.value })}
                   placeholder="e.g. 0.8"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Primary Commute Access
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Commute Access Mode
                 </label>
                 <select
                   value={basics.transitMode}
                   onChange={(e) => setBasics({ ...basics, transitMode: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 bg-white"
                 >
-                  <option value="WALKING">Safe Walking Distance (&lt; 1.5 km)</option>
-                  <option value="SHUTTLE">Official University Shuttle Route Stop</option>
-                  <option value="TAXI">Public Transit / Rea Vaya / MyCiTi (&lt; 300m)</option>
-                  <option value="PRIVATE_SHUTTLE">Residence-Operated Private Shuttle</option>
+                  <option value="WALKING">Walking Distance (&lt; 1.5 km)</option>
+                  <option value="SHUTTLE">University Shuttle Route</option>
+                  <option value="TAXI">Public Transit / Bus Route</option>
+                  <option value="PRIVATE_SHUTTLE">Residence Shuttle Service</option>
                 </select>
               </div>
             </div>
           </div>
 
           {/* Physical Address Details */}
-          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600">
-              Physical Location &amp; Postal Address
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Physical Location &amp; Address
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Street Address &amp; Number <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Street Address &amp; Number <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -996,51 +1075,51 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                     required
                     value={basics.streetAddress}
                     onChange={(e) => setBasics({ ...basics, streetAddress: e.target.value })}
-                    placeholder="e.g. 45 Juta Street, Braamfontein"
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                    placeholder="e.g. 45 Juta Street"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                   />
-                  <LuMapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                  <LuMapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Suburb / Area <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  Suburb / Area <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={basics.suburb}
                   onChange={(e) => setBasics({ ...basics, suburb: e.target.value })}
-                  placeholder="e.g. Braamfontein, Auckland Park, Hatfield"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                  placeholder="e.g. Braamfontein, Parktown, Hatfield"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  City <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  City <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={basics.city}
                   onChange={(e) => setBasics({ ...basics, city: e.target.value })}
-                  placeholder="e.g. Johannesburg, Cape Town, Pretoria"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                  placeholder="e.g. Johannesburg, Pretoria, Cape Town"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Province
                 </label>
                 <select
                   value={basics.province}
                   onChange={(e) => setBasics({ ...basics, province: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900 bg-white"
                 >
                   {SA_PROVINCES.map((prov) => (
                     <option key={prov} value={prov}>
@@ -1051,7 +1130,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Postal Code
                 </label>
                 <input
@@ -1059,7 +1138,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                   value={basics.postalCode}
                   onChange={(e) => setBasics({ ...basics, postalCode: e.target.value })}
                   placeholder="e.g. 2001"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-800"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                 />
               </div>
             </div>
@@ -1069,40 +1148,31 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             <button
               type="button"
               onClick={() => setActiveTab("capacity")}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
-              Continue to Capacity &amp; Rates →
+              Continue to Room Types &amp; Rates →
             </button>
           </div>
         </div>
       )}
 
-      {/* ================= TAB 2: CAPACITY & RATES (ROBUST ROOM LISTING) ================= */}
+      {/* ================= TAB 2: ROOM TYPES & RATES ================= */}
       {activeTab === "capacity" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-7">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-7">
           
           {/* Header & Overview */}
-          <div className="border-b border-gray-100 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="border-b border-slate-100 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  Step 2: Room Inventory
-                </span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs font-semibold text-gray-500">
-                  {rooms.length} Room Type{rooms.length !== 1 ? "s" : ""} Configured
-                </span>
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">Room Configurations &amp; Student Rates</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Add distinct room types, upload interior room photos, configure per-bed rental rates, and tag NSFAS allowances.
+              <h2 className="text-base font-bold text-slate-900">Room Configurations &amp; Rates</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Define room layouts, interior amenities, per-bed rental pricing, and deposit amounts.
               </p>
             </div>
 
-            {/* Quick Templates Dropdown / Popover Bar */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl bg-gray-50 border border-gray-200">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 flex items-center gap-1">
-                <LuSparkles className="w-3 h-3 text-emerald-600" /> Presets:
+            {/* Presets Bar */}
+            <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-1">
+                Presets:
               </span>
               {ROOM_TYPE_PRESETS.map((preset, pIdx) => (
                 <button
@@ -1110,77 +1180,72 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                   type="button"
                   onClick={() => applyPreset(preset)}
                   title={preset.description}
-                  className="px-2.5 py-1 text-[11px] font-semibold text-gray-700 bg-white hover:bg-emerald-50 hover:text-emerald-700 rounded-lg border border-gray-200 shadow-2xs transition-all cursor-pointer"
+                  className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:text-[#005F56] hover:border-[#005F56] rounded border border-slate-300 transition-all cursor-pointer"
                 >
-                  {preset.name.split(" ")[0]} Mix
+                  {preset.name}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Live Building Capacity Metrics Ribbon */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] border border-[#E2E8F0]">
+          {/* Building Capacity Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block flex items-center gap-1">
-                <LuBed className="w-3.5 h-3.5 text-emerald-600" /> Total Student Beds
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-1">
+                <LuBed className="w-3.5 h-3.5 text-[#005F56]" /> Total Beds
               </span>
-              <span className="text-xl font-black text-gray-900 block">
+              <span className="text-xl font-bold text-slate-900 block">
                 {buildingMetrics.totalBeds} Beds
               </span>
-              <span className="text-[10px] text-gray-400">Summed from all units</span>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block flex items-center gap-1">
-                <LuLayers className="w-3.5 h-3.5 text-blue-600" /> Bedroom Units
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-1">
+                <LuLayers className="w-3.5 h-3.5 text-[#005F56]" /> Room Units
               </span>
-              <span className="text-xl font-black text-gray-900 block">
+              <span className="text-xl font-bold text-slate-900 block">
                 {buildingMetrics.totalBedrooms} Rooms
               </span>
-              <span className="text-[10px] text-gray-400">{rooms.length} unique room layout{rooms.length !== 1 ? "s" : ""}</span>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block flex items-center gap-1">
-                <LuDollarSign className="w-3.5 h-3.5 text-emerald-600" /> Base Starting Rent
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-1">
+                <LuDollarSign className="w-3.5 h-3.5 text-[#005F56]" /> Starting Rate
               </span>
-              <span className="text-xl font-black text-emerald-700 block">
-                R {buildingMetrics.minPrice.toLocaleString()}
-                <span className="text-[11px] font-normal text-gray-500"> / bed</span>
+              <span className="text-xl font-bold text-[#005F56] block">
+                {buildingMetrics.minPrice > 0 ? `R ${buildingMetrics.minPrice.toLocaleString()}` : "--"}
+                <span className="text-[10px] font-normal text-slate-500"> / bed</span>
               </span>
-              <span className="text-[10px] text-gray-400">Lowest rate per student</span>
             </div>
 
             <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block flex items-center gap-1">
-                <LuUsers className="w-3.5 h-3.5 text-purple-600" /> Gross Potential
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center gap-1">
+                <LuUsers className="w-3.5 h-3.5 text-[#005F56]" /> Gross Potential
               </span>
-              <span className="text-xl font-black text-gray-900 block">
-                R {buildingMetrics.grossRevenue.toLocaleString()}
-                <span className="text-[11px] font-normal text-gray-500"> / mo</span>
+              <span className="text-xl font-bold text-slate-900 block">
+                {buildingMetrics.grossRevenue > 0 ? `R ${buildingMetrics.grossRevenue.toLocaleString()}` : "--"}
+                <span className="text-[10px] font-normal text-slate-500"> / mo</span>
               </span>
-              <span className="text-[10px] text-emerald-600 font-semibold">100% full capacity</span>
             </div>
           </div>
 
-          {/* Rooms List Section */}
+          {/* Rooms List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                <LuSlidersHorizontal className="w-3.5 h-3.5 text-emerald-600" />
-                Configured Room Types &amp; Inclusions ({rooms.length})
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <LuSlidersHorizontal className="w-3.5 h-3.5 text-[#005F56]" />
+                Configured Room Layouts ({rooms.length})
               </h3>
               <button
                 type="button"
                 onClick={addRoom}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all cursor-pointer border border-emerald-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#005F56] text-white text-xs font-bold transition-all cursor-pointer hover:bg-[#004d46]"
               >
                 <LuPlus className="w-3.5 h-3.5" />
-                <span>+ Add Room Type</span>
+                <span>Add Room Layout</span>
               </button>
             </div>
 
-            {/* Individual Room Cards */}
             <div className="space-y-4">
               {rooms.map((room, idx) => {
                 const totalBedsInThisType = (Number(room.quantity) || 1) * (Number(room.bedsPerRoom) || 1);
@@ -1189,48 +1254,45 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                 return (
                   <div
                     key={room.id}
-                    className="rounded-2xl border border-gray-200 bg-white hover:border-gray-300 transition-all shadow-xs overflow-hidden"
+                    className="rounded-lg border border-slate-300 bg-white overflow-hidden shadow-xs"
                   >
-                    {/* Room Card Header Strip */}
-                    <div className="p-4 bg-gray-50/70 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                    {/* Room Header Strip */}
+                    <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-extrabold text-xs flex items-center justify-center">
+                        <span className="w-6 h-6 rounded bg-[#005F56] text-white font-bold text-xs flex items-center justify-center">
                           {idx + 1}
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-gray-900">
-                              {room.name || `Room Type ${idx + 1}`}
+                            <h4 className="text-xs font-bold text-slate-900">
+                              {room.name || `Untitled Room Layout ${idx + 1}`}
                             </h4>
                             {room.isNsfasCapped && (
-                              <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
-                                NSFAS Cap Aligned
+                              <span className="text-[10px] font-bold text-[#005F56] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                NSFAS Capped
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-gray-500 mt-0.5">
-                            {room.quantity} unit{room.quantity > 1 ? "s" : ""} • {totalBedsInThisType} total bed{totalBedsInThisType > 1 ? "s" : ""} • {room.bathroomType.replace("_", " ")}
+                          <p className="text-[11px] text-slate-500">
+                            {room.quantity} unit{room.quantity > 1 ? "s" : ""} • {totalBedsInThisType} bed{totalBedsInThisType > 1 ? "s" : ""} • {room.bathroomType.replace("_", " ")}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <span className="text-xs font-extrabold text-gray-900 block">
+                          <span className="text-xs font-bold text-slate-900 block">
                             R {Number(room.monthlyPrice || 0).toLocaleString()}
-                            <span className="text-[10px] font-normal text-gray-500"> / bed</span>
-                          </span>
-                          <span className="text-[10px] text-gray-400 block">
-                            Deposit: R{Number(room.deposit || 0).toLocaleString()}
+                            <span className="text-[10px] font-normal text-slate-500"> / bed</span>
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+                        <div className="flex items-center gap-1 border-l border-slate-300 pl-2">
                           <button
                             type="button"
                             onClick={() => duplicateRoom(room.id)}
-                            title="Duplicate this room configuration"
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 transition-colors cursor-pointer"
+                            title="Duplicate room layout"
+                            className="p-1.5 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
                           >
                             <LuCopy className="w-3.5 h-3.5" />
                           </button>
@@ -1239,8 +1301,8 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                             type="button"
                             onClick={() => removeRoom(room.id)}
                             disabled={rooms.length <= 1}
-                            title={rooms.length <= 1 ? "At least 1 room type required" : "Remove this room configuration"}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                            title="Remove room layout"
+                            className="p-1.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 transition-colors cursor-pointer"
                           >
                             <LuTrash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1248,7 +1310,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                           <button
                             type="button"
                             onClick={() => toggleRoomExpand(room.id)}
-                            className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-200/60 transition-colors cursor-pointer ml-1"
+                            className="p-1.5 rounded text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
                           >
                             {room.isExpanded ? (
                               <LuChevronUp className="w-4 h-4" />
@@ -1260,29 +1322,27 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                       </div>
                     </div>
 
-                    {/* Room Card Expanded Body */}
+                    {/* Room Body */}
                     {room.isExpanded && (
                       <div className="p-5 space-y-5">
-                        
-                        {/* Primary Room Attributes */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="sm:col-span-2">
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Room Type Title / Identifier <span className="text-red-500">*</span>
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Room Type Title <span className="text-rose-500">*</span>
                             </label>
                             <input
                               type="text"
                               required
                               value={room.name}
                               onChange={(e) => updateRoom(room.id, { name: e.target.value })}
-                              placeholder="e.g. Deluxe Single Ensuite, Room 101 Standard"
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+                              placeholder="e.g. Standard Single, 2-Sharing Ensuite"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] bg-white"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Room Layout Category
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Layout Category
                             </label>
                             <select
                               value={room.type}
@@ -1304,7 +1364,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                                   bathroomType: newType === "SINGLE_ENSUITE" || newType === "STUDIO_BACHELOR" ? "ENSUITE" : room.bathroomType,
                                 });
                               }}
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] font-medium"
                             >
                               <option value="SINGLE_STANDARD">Single Room (Standard Private)</option>
                               <option value="SINGLE_ENSUITE">Single Room (Private Ensuite)</option>
@@ -1318,8 +1378,8 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Number of Identical Units <span className="text-red-500">*</span>
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Number of Identical Units <span className="text-rose-500">*</span>
                             </label>
                             <input
                               type="number"
@@ -1327,16 +1387,14 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                               required
                               value={room.quantity}
                               onChange={(e) => updateRoom(room.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
                             />
-                            <span className="text-[10px] text-gray-400 mt-0.5 block">Units with this layout</span>
                           </div>
                         </div>
 
-                        {/* Secondary Attributes: Pricing, Beds, Bath, Size */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
                               Beds Per Unit
                             </label>
                             <input
@@ -1344,56 +1402,55 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                               min={1}
                               value={room.bedsPerRoom}
                               onChange={(e) => updateRoom(room.id, { bedsPerRoom: Math.max(1, parseInt(e.target.value) || 1) })}
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
                             />
-                            <span className="text-[10px] text-gray-400 mt-0.5 block">e.g. 1 (Single) or 2 (Sharing)</span>
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Monthly Rental Rate per Bed (ZAR) <span className="text-red-500">*</span>
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Monthly Rent per Bed (ZAR) <span className="text-rose-500">*</span>
                             </label>
                             <div className="relative">
-                              <span className="absolute left-3 top-2 text-xs font-bold text-gray-400">R</span>
-                              <input
-                                type="number"
-                                step="10"
-                                min={1}
-                                required
-                                value={room.monthlyPrice}
-                                onChange={(e) => updateRoom(room.id, { monthlyPrice: Math.max(0, parseFloat(e.target.value) || 0) })}
-                                placeholder="4800"
-                                className="w-full pl-7 pr-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Security Deposit (ZAR)
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-2 text-xs font-bold text-gray-400">R</span>
+                              <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">R</span>
                               <input
                                 type="number"
                                 step="10"
                                 min={0}
-                                value={room.deposit}
-                                onChange={(e) => updateRoom(room.id, { deposit: Math.max(0, parseFloat(e.target.value) || 0) })}
+                                required
+                                value={room.monthlyPrice || ""}
+                                onChange={(e) => updateRoom(room.id, { monthlyPrice: Math.max(0, parseFloat(e.target.value) || 0) })}
                                 placeholder="4800"
-                                className="w-full pl-7 pr-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] bg-white"
                               />
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Security Deposit (ZAR)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">R</span>
+                              <input
+                                type="number"
+                                step="10"
+                                min={0}
+                                value={room.deposit || ""}
+                                onChange={(e) => updateRoom(room.id, { deposit: Math.max(0, parseFloat(e.target.value) || 0) })}
+                                placeholder="4800"
+                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
                               Bathroom Arrangement
                             </label>
                             <select
                               value={room.bathroomType}
                               onChange={(e) => updateRoom(room.id, { bathroomType: e.target.value as RoomTypeItem["bathroomType"] })}
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] font-medium"
                             >
                               <option value="ENSUITE">Private In-Room Ensuite</option>
                               <option value="SHARED_1_2">Semi-Private (Shared 1:2)</option>
@@ -1402,32 +1459,28 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                           </div>
                         </div>
 
-                        {/* Tertiary Attributes: NSFAS, Availability, Size */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Room Floor Area (Optional)
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Floor Area (m²) (Optional)
                             </label>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                value={room.sizeSqm || ""}
-                                onChange={(e) => updateRoom(room.id, { sizeSqm: e.target.value })}
-                                placeholder="e.g. 16"
-                                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                              />
-                              <span className="absolute right-3 top-2 text-[11px] text-gray-400 font-medium">m²</span>
-                            </div>
+                            <input
+                              type="text"
+                              value={room.sizeSqm || ""}
+                              onChange={(e) => updateRoom(room.id, { sizeSqm: e.target.value })}
+                              placeholder="e.g. 16"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
+                            />
                           </div>
 
                           <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                              Current Availability Status
+                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                              Availability Status
                             </label>
                             <select
                               value={room.availabilityStatus}
                               onChange={(e) => updateRoom(room.id, { availabilityStatus: e.target.value as RoomTypeItem["availabilityStatus"] })}
-                              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-medium"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] font-medium"
                             >
                               <option value="AVAILABLE_NOW">Available Immediately</option>
                               <option value="NEXT_SEMESTER">Available Next Academic Semester</option>
@@ -1436,64 +1489,60 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                             </select>
                           </div>
 
-                          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-300">
                             <div>
-                              <span className="text-xs font-bold text-gray-900 block">NSFAS Allowance Cap</span>
-                              <span className="text-[10px] text-gray-500 block">Aligned with DHET grant rate</span>
+                              <span className="text-xs font-bold text-slate-900 block">NSFAS Allowance Cap</span>
+                              <span className="text-[10px] text-slate-500 block">Aligned with student bursary grant</span>
                             </div>
                             <input
                               type="checkbox"
                               checked={room.isNsfasCapped}
                               onChange={(e) => updateRoom(room.id, { isNsfasCapped: e.target.checked })}
-                              className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
+                              className="w-4 h-4 text-[#005F56] accent-[#005F56] rounded cursor-pointer"
                             />
                           </div>
                         </div>
 
-                        {/* In-Room Inclusions & Features */}
+                        {/* Room Inclusions */}
                         <div className="pt-2">
-                          <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2">
-                            In-Room Furnishings &amp; Included Features
+                          <label className="block text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2">
+                            In-Room Furnishings &amp; Items
                           </label>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                             {ROOM_FEATURE_OPTIONS.map((feat) => {
                               const isChecked = room.features.includes(feat.id);
+                              const Icon = feat.icon;
                               return (
                                 <button
                                   key={feat.id}
                                   type="button"
                                   onClick={() => toggleRoomFeature(room.id, feat.id)}
-                                  className={`flex items-center gap-2 p-2 rounded-xl border text-left text-[11px] font-medium transition-all cursor-pointer ${
+                                  className={`flex items-center gap-2 p-2.5 rounded-lg border text-left text-xs transition-all cursor-pointer ${
                                     isChecked
-                                      ? "border-emerald-500 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500/20 font-semibold"
-                                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                      ? "border-[#005F56] bg-[#005F56]/10 text-[#005F56] font-bold border-2"
+                                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                                   }`}
                                 >
-                                  <span className="text-sm shrink-0">{feat.icon}</span>
-                                  <span className="truncate flex-1">{feat.label}</span>
-                                  {isChecked && <LuCheck className="w-3 h-3 text-emerald-600 shrink-0" />}
+                                  <Icon className="w-4 h-4 shrink-0" />
+                                  <span className="truncate flex-1 text-[11px]">{feat.label}</span>
+                                  {isChecked && <LuCheck className="w-3.5 h-3.5 text-[#005F56] shrink-0" />}
                                 </button>
                               );
                             })}
                           </div>
                         </div>
 
-                        {/* Room-Specific Photos Gallery */}
-                        <div className="pt-3 border-t border-gray-100 space-y-3">
+                        {/* Room Photos */}
+                        <div className="pt-3 border-t border-slate-200 space-y-3">
                           <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                                <LuImage className="w-3.5 h-3.5 text-emerald-600" />
-                                Interior Photos for this Room ({room.photos.length})
-                              </span>
-                              <span className="text-[11px] text-gray-400 block">
-                                Upload pictures of the bed, study workspace, wardrobe, and ensuite.
-                              </span>
-                            </div>
+                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                              <LuImage className="w-3.5 h-3.5 text-[#005F56]" />
+                              Interior Photos for this Room ({room.photos.length})
+                            </span>
 
-                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-[#005F56] border border-[#005F56] text-xs font-bold cursor-pointer hover:bg-[#005F56]/10 transition-colors">
                               <LuUpload className="w-3.5 h-3.5" />
-                              <span>{isUploading ? "Uploading..." : "+ Add Room Photo"}</span>
+                              <span>{isUploading ? "Uploading..." : "Add Room Photo"}</span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -1505,9 +1554,9 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                           </div>
 
                           {room.photos.length === 0 ? (
-                            <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 text-center">
-                              <p className="text-[11px] text-gray-400">
-                                No room photos uploaded yet. High quality room photos increase student applications by 78%.
+                            <div className="p-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center">
+                              <p className="text-xs text-slate-500">
+                                No room photos uploaded yet.
                               </p>
                             </div>
                           ) : (
@@ -1515,17 +1564,17 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                               {room.photos.map((url, pIdx) => (
                                 <div
                                   key={pIdx}
-                                  className="relative rounded-xl overflow-hidden border border-gray-200 group aspect-square bg-gray-100"
+                                  className="relative rounded-lg overflow-hidden border border-slate-300 group aspect-square bg-slate-100"
                                 >
                                   <img
-                                    src={url}
+                                    src={getPublicMediaUrl(url)}
                                     alt={`${room.name} photo ${pIdx + 1}`}
                                     className="w-full h-full object-cover"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => removeRoomPhoto(room.id, pIdx)}
-                                    className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/70 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                                    className="absolute top-1.5 right-1.5 p-1 rounded bg-black/70 hover:bg-rose-600 text-white transition-colors cursor-pointer"
                                   >
                                     <LuTrash2 className="w-3 h-3" />
                                   </button>
@@ -1542,90 +1591,55 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
               })}
             </div>
 
-            {/* Add Room Type Button */}
             <button
               type="button"
               onClick={addRoom}
-              className="w-full py-4 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/70 text-emerald-800 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 rounded-lg border-2 border-dashed border-slate-300 hover:border-[#005F56] bg-slate-50 hover:bg-[#005F56]/5 text-slate-700 hover:text-[#005F56] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <LuPlus className="w-4 h-4 text-emerald-600" />
-              <span>+ Add Another Room Configuration / Unit</span>
+              <LuPlus className="w-4 h-4" />
+              <span>Add Another Room Layout</span>
             </button>
           </div>
 
-          {/* Building-Wide Bathroom & Security Deposit Settings */}
-          <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600">
-              Building-Wide Facilities &amp; NSFAS Direct Scheme
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Total Residence Bathrooms
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min={1}
-                    value={totalBathrooms}
-                    onChange={(e) => setTotalBathrooms(e.target.value)}
-                    placeholder="3"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-900 bg-white font-bold"
-                  />
-                  <LuBath className="w-4 h-4 text-gray-400 absolute right-3 top-3" />
-                </div>
-                <span className="text-[10px] text-gray-400 mt-1 block">Toilets / Showers across the property</span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Standard Security Deposit (ZAR)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-gray-400">R</span>
-                  <input
-                    type="number"
-                    step="10"
-                    value={generalDeposit}
-                    onChange={(e) => setGeneralDeposit(e.target.value)}
-                    placeholder="4600"
-                    className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs text-gray-900 bg-white font-bold"
-                  />
-                </div>
-                <span className="text-[10px] text-gray-400 mt-1 block">Refundable student deposit</span>
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-white border border-gray-200">
-                <div>
-                  <span className="text-xs font-bold text-gray-900 block">Accept NSFAS Direct</span>
-                  <span className="text-[10px] text-gray-500 block">Direct institutional disbursement</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={nsfasEligible}
-                  onChange={(e) => setNsfasEligible(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
-                />
-              </div>
+          {/* NSFAS Accreditation Toggle */}
+          <div className="p-5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                NSFAS Accreditation Status
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Is this residence officially accredited to accept NSFAS-funded students?
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsNsfasAccredited((prev) => !prev)}
+              className={`px-5 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                isNsfasAccredited
+                  ? "bg-[#005F56] text-white shadow-xs"
+                  : "bg-white text-slate-700 border border-slate-300 hover:border-slate-400"
+              }`}
+            >
+              <LuShieldCheck className="w-4 h-4" />
+              <span>{isNsfasAccredited ? "NSFAS Accredited Residence" : "Not NSFAS Accredited"}</span>
+            </button>
           </div>
 
-          {/* Tab Navigation Controls */}
           <div className="pt-2 flex justify-between">
             <button
               type="button"
               onClick={() => setActiveTab("basics")}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
             >
               ← Back to Identity
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("amenities")}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
-              Continue to Living Amenities →
+              Continue to Amenities &amp; Utilities →
             </button>
           </div>
         </div>
@@ -1633,37 +1647,38 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
 
       {/* ================= TAB 3: LIVING AMENITIES ================= */}
       {activeTab === "amenities" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-base font-bold text-gray-900">Student Living Amenities &amp; Resilience</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Select all verified facilities included with accommodation rent.
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="text-base font-bold text-slate-900">Living Amenities &amp; Utilities</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Select the building features and utilities provided at this residence.
             </p>
           </div>
 
           <div className="space-y-6">
             {AMENITY_CATEGORIES.map((group) => (
               <div key={group.category} className="space-y-2.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   {group.category}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {group.items.map((item) => {
                     const isSelected = selectedAmenities.includes(item.id);
+                    const Icon = item.icon;
                     return (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => toggleAmenity(item.id)}
-                        className={`flex items-center gap-3 p-3.5 rounded-2xl border text-left text-xs font-semibold transition-all cursor-pointer ${
+                        className={`flex items-center gap-3 p-3.5 rounded-lg border text-left text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? "border-emerald-600 bg-emerald-50 text-emerald-950 shadow-xs ring-1 ring-emerald-500/20"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50/50"
+                            ? "border-[#005F56] bg-[#005F56]/10 text-[#005F56] font-bold border-2"
+                            : "border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50"
                         }`}
                       >
-                        <span className="text-lg shrink-0">{item.icon}</span>
+                        <Icon className="w-5 h-5 shrink-0 text-[#005F56]" />
                         <span className="flex-1 leading-snug">{item.label}</span>
-                        {isSelected && <LuCheck className="w-4 h-4 text-emerald-600 shrink-0" />}
+                        {isSelected && <LuCheck className="w-4 h-4 text-[#005F56] shrink-0" />}
                       </button>
                     );
                   })}
@@ -1676,14 +1691,14 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             <button
               type="button"
               onClick={() => setActiveTab("capacity")}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
             >
               ← Back
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("safety")}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
               Continue to Safety Audit →
             </button>
@@ -1693,24 +1708,26 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
 
       {/* ================= TAB 4: 13-POINT SAFETY AUDIT ================= */}
       {activeTab === "safety" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-gray-900">13-Point Municipal Safety Checklist</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Standardized municipal health &amp; safety inspection required for university &amp; NSFAS accreditation.
+              <h2 className="text-base font-bold text-slate-900">13-Point Municipal Safety Checklist</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Complete the standard municipal health &amp; safety inspection for this residence.
               </p>
             </div>
 
-            {/* Live Safety Score Badge */}
-            <div className="p-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-teal-900 text-white flex items-center gap-3 shrink-0 shadow-sm">
-              <LuShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
+            {/* Safety Score Status */}
+            <div className="p-3 px-4 rounded-lg bg-slate-100 border border-slate-200 flex items-center gap-3 shrink-0">
+              <LuShieldCheck className="w-5 h-5 text-[#005F56] shrink-0" />
               <div>
-                <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider block">
-                  Computed Rating
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Safety Rating
                 </span>
-                <span className="text-lg font-extrabold text-white">
-                  {liveSafetyScore !== null ? `${liveSafetyScore.toFixed(1)} / 10` : "-- / 10"}
+                <span className="text-sm font-bold text-slate-900">
+                  {liveSafetyScore !== null
+                    ? `${liveSafetyScore.toFixed(1)} / 10 (${checklistAnsweredCount}/13 completed)`
+                    : `Pending Audit (0 of 13 evaluated)`}
                 </span>
               </div>
             </div>
@@ -1721,12 +1738,12 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             {checklistAnswers.map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all text-xs"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border border-slate-300 bg-white text-xs"
               >
                 <div className="flex-1">
-                  <span className="font-bold text-gray-900 block text-xs">{item.label}</span>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                    Category: {item.category.replace("_", " ")} • Priority Weight: {item.weight}
+                  <span className="font-bold text-slate-900 block text-xs">{item.label}</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Category: {item.category.replace("_", " ")}
                   </span>
                 </div>
 
@@ -1734,10 +1751,10 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                   <button
                     type="button"
                     onClick={() => setChecklistAnswer(idx, true)}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       item.passed === true
-                        ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-500/20"
-                        : "bg-gray-100 text-gray-600 hover:bg-emerald-50"
+                        ? "bg-[#005F56] text-white border border-[#005F56]"
+                        : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-[#005F56]/10 hover:text-[#005F56]"
                     }`}
                   >
                     <LuCheck className="w-3.5 h-3.5" /> Pass
@@ -1745,13 +1762,13 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
                   <button
                     type="button"
                     onClick={() => setChecklistAnswer(idx, false)}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                       item.passed === false
-                        ? "bg-rose-600 text-white shadow-xs ring-2 ring-rose-500/20"
-                        : "bg-gray-100 text-gray-600 hover:bg-rose-50"
+                        ? "bg-rose-600 text-white border border-rose-600"
+                        : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-rose-50 hover:text-rose-700"
                     }`}
                   >
-                    ✕ Fail
+                    <LuX className="w-3.5 h-3.5" /> Fail
                   </button>
                 </div>
               </div>
@@ -1762,14 +1779,14 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             <button
               type="button"
               onClick={() => setActiveTab("amenities")}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
             >
               ← Back
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("media")}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              className="px-6 py-2.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
               Continue to Photos &amp; Compliance →
             </button>
@@ -1779,21 +1796,21 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
 
       {/* ================= TAB 5: PHOTOS & COMPLIANCE ================= */}
       {activeTab === "media" && (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-base font-bold text-gray-900">Property Photos &amp; Compliance Documentation</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Upload verified photos of bedroom interiors, study spaces, and security perimeter.
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="text-base font-bold text-slate-900">Property Photos &amp; Compliance</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Upload photos of the building facade, common areas, and security features.
             </p>
           </div>
 
           {/* Photos Upload Area */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700">Property Gallery ({photos.length} uploaded)</span>
-              <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold cursor-pointer transition-colors">
+              <span className="text-xs font-bold text-slate-800">General Gallery ({photos.length} uploaded)</span>
+              <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#005F56] text-white text-xs font-bold cursor-pointer hover:bg-[#004d46] transition-colors">
                 <LuUpload className="w-3.5 h-3.5" />
-                <span>{uploadingPhoto ? "Uploading to Blob..." : "+ Upload Photo"}</span>
+                <span>{uploadingPhoto ? "Uploading..." : "Upload Photo"}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1805,20 +1822,24 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             </div>
 
             {photos.length === 0 ? (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-gray-200 text-center space-y-2">
-                <LuUpload className="w-8 h-8 text-gray-400 mx-auto" />
-                <p className="text-xs text-gray-600 font-semibold">No property images uploaded yet</p>
-                <p className="text-[11px] text-gray-400">Upload photos of rooms, bathrooms, study desks, and security gates.</p>
+              <div className="p-8 rounded-lg border-2 border-dashed border-slate-300 text-center space-y-2">
+                <LuUpload className="w-8 h-8 text-slate-400 mx-auto" />
+                <p className="text-xs text-slate-700 font-semibold">No property images uploaded yet</p>
+                <p className="text-[11px] text-slate-500">Upload exterior photos, study areas, kitchen, and entrance security.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {photos.map((url, idx) => (
-                  <div key={idx} className="relative rounded-xl overflow-hidden border border-gray-200 group aspect-video bg-gray-100">
-                    <img src={url} alt={`Residence photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div key={idx} className="relative rounded-lg overflow-hidden border border-slate-300 group aspect-video bg-slate-100">
+                    <img
+                      src={getPublicMediaUrl(url)}
+                      alt={`Residence photo ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
                       onClick={() => removePhoto(idx)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer"
+                      className="absolute top-2 right-2 p-1.5 rounded bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer"
                     >
                       <LuTrash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1829,11 +1850,11 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
           </div>
 
           {/* Bottom Complete Bar */}
-          <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <LuShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span className="text-xs text-gray-600">
-                Ready to publish. Safety Rating will be live immediately.
+              <LuShieldCheck className="w-5 h-5 text-[#005F56]" />
+              <span className="text-xs text-slate-600">
+                Ready to publish your student residence listing.
               </span>
             </div>
 
@@ -1841,7 +1862,7 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
               type="button"
               disabled={saving || success || !isFormValid}
               onClick={handlePublish}
-              className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="px-8 py-3 rounded-lg bg-[#005F56] hover:bg-[#004d46] disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
             >
               {saving ? (
                 <>
