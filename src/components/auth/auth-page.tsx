@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, useState, Suspense } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { loginWithGoogle } from "@/lib/firebase";
 import { formatSrcAlias } from "@/lib/auth";
@@ -136,7 +136,6 @@ function rolePath(role: Role, mode: Mode) {
 }
 
 function LoginForm({ role }: { role: Role }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
   const [email, setEmail] = useState("");
@@ -145,14 +144,6 @@ function LoginForm({ role }: { role: Role }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-
-  useEffect(() => {
-    router.prefetch("/onboarding");
-    router.prefetch("/landlord/onboarding");
-    router.prefetch("/dashboard/student");
-    router.prefetch("/dashboard/landlord");
-    router.prefetch("/dashboard/src");
-  }, [router]);
 
   async function handleGoogleLogin() {
     setError(null);
@@ -206,19 +197,23 @@ function LoginForm({ role }: { role: Role }) {
       const data = await response.json();
       if (!response.ok) {
         if (data.needsVerification) {
-          router.push(`/verify?email=${encodeURIComponent(email)}&role=${encodeURIComponent(data.role || role)}`);
+          setRedirecting(true);
+          window.location.href = `/verify?email=${encodeURIComponent(email)}&role=${encodeURIComponent(data.role || role)}${next ? `&next=${encodeURIComponent(next)}` : ""}`;
           return;
         }
         setError(typeof data.error === "string" ? data.error : "Login failed");
+        setLoading(false);
         return;
       }
 
+      setRedirecting(true);
+
       if (data.user.role === "STUDENT" && !data.user.onboardingCompleted) {
-        router.push("/onboarding");
+        window.location.href = "/onboarding";
         return;
       }
       if (data.user.role === "LANDLORD" && !data.user.onboardingCompleted) {
-        router.push("/landlord/onboarding");
+        window.location.href = "/landlord/onboarding";
         return;
       }
 
@@ -258,8 +253,10 @@ function LoginForm({ role }: { role: Role }) {
         }
       }
 
-      router.push(targetUrl);
-    } finally {
+      window.location.href = targetUrl;
+    } catch (err: any) {
+      console.error("Login submission error:", err);
+      setError("An unexpected network error occurred. Please try again.");
       setLoading(false);
     }
   }
@@ -339,7 +336,6 @@ const SA_UNIVERSITIES = [
 ];
 
 function RegisterForm({ role }: { role: Role }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
   const isSrc = role === "SRC_REPRESENTATIVE";
@@ -359,14 +355,6 @@ function RegisterForm({ role }: { role: Role }) {
 
   const currentInstitution = form.institutionName || SA_UNIVERSITIES[0];
   const srcAlias = formatSrcAlias(currentInstitution);
-
-  useEffect(() => {
-    router.prefetch("/onboarding");
-    router.prefetch("/landlord/onboarding");
-    router.prefetch("/dashboard/student");
-    router.prefetch("/dashboard/landlord");
-    router.prefetch("/dashboard/src");
-  }, [router]);
 
   function update(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));

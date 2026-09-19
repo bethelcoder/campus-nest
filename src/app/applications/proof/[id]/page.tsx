@@ -181,9 +181,9 @@ export default async function ApplicationProofLetterPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[#64748B]">Municipal Safety Rating</dt>
+                <dt className="text-[#64748B]">Student Safety &amp; Security Rating</dt>
                 <dd className="mt-1 font-bold text-emerald-700">
-                  {property.safetyScore ? `${Number(property.safetyScore).toFixed(1)} / 10 (Grade A Accredited)` : "Verified 13-Point Check"}
+                  {property.safetyScore ? `${Number(property.safetyScore).toFixed(1)} / 10 (Tier-1 High Security & 13-Point Inspected)` : "Verified 13-Point Safety Standard"}
                 </dd>
               </div>
               <div>

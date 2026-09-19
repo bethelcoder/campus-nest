@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       metadata: { userId: user.id, role: data.role },
     }).catch((err) => console.warn("Admin notification error:", err));
 
-    // Send 6-digit OTP email via Brevo
+    // Send 6-digit OTP email via Brevo / Resend
     try {
       await sendOtpEmail({
         to: loginEmail,
@@ -126,11 +126,7 @@ export async function POST(req: NextRequest) {
         role: data.role,
       });
     } catch (err) {
-      console.error("Email dispatch error:", err);
-      return NextResponse.json(
-        { error: "Your account was created, but the verification email could not be sent. Please try again later." },
-        { status: 502 }
-      );
+      console.warn("⚠️ Email dispatch warning (proceeding to verification step):", err);
     }
 
     return NextResponse.json(

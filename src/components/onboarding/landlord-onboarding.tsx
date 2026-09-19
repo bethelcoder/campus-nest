@@ -66,7 +66,7 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
         if (res.ok) {
           const { user, profile } = await res.json();
           if (user?.onboardingCompleted) {
-            router.push("/dashboard/landlord");
+            window.location.href = "/dashboard/landlord";
             return;
           }
 

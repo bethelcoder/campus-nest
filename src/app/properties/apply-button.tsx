@@ -153,9 +153,17 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
               </div>
 
               {message && (
-                <p className={`mt-3 text-xs font-medium ${state === "error" ? "text-rose-600" : "text-emerald-600"}`}>
-                  {message}
-                </p>
+                <div className={`mt-3 p-2.5 rounded-xl text-xs space-y-1.5 ${state === "error" ? "bg-rose-50 border border-rose-200 text-rose-800" : "bg-emerald-50 border border-emerald-200 text-emerald-800"}`}>
+                  <p className="font-medium">{message}</p>
+                  {state === "error" && (
+                    <Link
+                      href="/dashboard/student/applications"
+                      className="inline-block text-[11px] font-bold text-[#005F56] underline"
+                    >
+                      View existing application &rarr;
+                    </Link>
+                  )}
+                </div>
               )}
 
               <button

@@ -29,15 +29,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { status } = parsed.data;
 
+  const isVerifying = status === "VERIFIED" || parsed.data.verify;
+
   const updated = await prisma.property.update({
     where: { id: params.id },
     data: {
       status,
-      ...(parsed.data.verify
+      ...(isVerifying
         ? {
             physicalInspectionAt: new Date(),
             physicalInspectorName: "CampusNest Platform Admin",
             accreditationReference: property.accreditationReference || `CN-${property.id.slice(-8).toUpperCase()}`,
+          }
+        : status === "REJECTED" || status === "PENDING_VERIFICATION"
+        ? {
+            physicalInspectionAt: null,
+            physicalInspectorName: null,
           }
         : {}),
     },

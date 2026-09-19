@@ -73,8 +73,7 @@ export async function GET(req: NextRequest) {
           role: user.role,
         });
       } catch (err) {
-        console.error("Auto-dispatch email error:", err);
-        return NextResponse.json({ error: "Verification email could not be sent. Please contact support." }, { status: 502 });
+        console.warn("Auto-dispatch email warning:", err);
       }
 
       remainingCooldown = RESEND_COOLDOWN_SECONDS;

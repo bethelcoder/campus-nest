@@ -25,7 +25,8 @@ const FALLBACK_PROPERTY_IMAGES = [
 
 export default async function StudentPropertiesPage() {
   const properties = await prisma.property.findMany({
-    orderBy: { createdAt: "desc" },
+    where: { status: "VERIFIED" },
+    orderBy: [{ safetyScore: "desc" }, { createdAt: "desc" }],
     include: {
       landlord: {
         select: { name: true, surname: true },

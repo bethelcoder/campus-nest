@@ -248,9 +248,21 @@ export function DynamicApplicationForm({
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6 pt-5">
           {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-red-50 text-red-700 border border-red-200 text-xs flex items-center gap-2">
-              <LuInfo className="w-4 h-4 shrink-0" />
-              <span>{errorMessage}</span>
+            <div className="p-4 rounded-xl bg-amber-50 text-amber-950 border border-amber-300 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-bold text-amber-900">
+                <LuInfo className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Accommodation Application Notice</span>
+              </div>
+              <p className="leading-relaxed text-amber-900">{errorMessage}</p>
+              <div className="pt-1 flex items-center gap-2">
+                <Link
+                  href="/dashboard/student/applications"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-[11px] font-bold transition-all shadow-2xs"
+                >
+                  <span>Manage My Active Applications</span>
+                  <LuArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           )}
 

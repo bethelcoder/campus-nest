@@ -35,8 +35,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch {
       window.location.href = "/";
     }

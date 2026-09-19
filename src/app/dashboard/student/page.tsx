@@ -85,6 +85,7 @@ export default async function StudentDashboardPage() {
       include: {
         studentProfile: true,
         favorites: {
+          where: { property: { status: "VERIFIED" } },
           orderBy: { createdAt: "desc" },
           include: {
             property: {

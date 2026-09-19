@@ -1,22 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, useState, Suspense } from "react";
 import { LuShield, LuLock } from "react-icons/lu";
 
 function AdminLoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    router.prefetch("/dashboard/admin");
-  }, [router]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -36,9 +31,11 @@ function AdminLoginForm() {
           setError(
             "Your admin account requires email verification. Contact the platform team or check your inbox for a verification code."
           );
+          setLoading(false);
           return;
         }
         setError(typeof data.error === "string" ? data.error : "Login failed");
+        setLoading(false);
         return;
       }
 
@@ -47,6 +44,7 @@ function AdminLoginForm() {
         setError(
           "This account is not authorized for platform admin access. Please use the appropriate sign-in page for your role."
         );
+        setLoading(false);
         return;
       }
 
@@ -55,8 +53,9 @@ function AdminLoginForm() {
         targetUrl = next.startsWith("/admin/") ? next.replace("/admin/", "/dashboard/admin/") : next;
       }
 
-      router.push(targetUrl);
-    } finally {
+      window.location.href = targetUrl;
+    } catch (err) {
+      setError("Network error occurred during login. Please try again.");
       setLoading(false);
     }
   }

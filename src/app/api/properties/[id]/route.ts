@@ -129,7 +129,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const allItems = await prisma.checklistItem.findMany({ where: { propertyId: params.id } });
     data.safetyScore = calculateSafetyScore(allItems);
-    data.status = isChecklistComplete(allItems) ? "VERIFIED" : "PENDING_VERIFICATION";
+    // Landlord checklist submission puts property in review; only Platform Admins can set VERIFIED
+    if (property.status !== "VERIFIED") {
+      data.status = "PENDING_VERIFICATION";
+    } else if (!isChecklistComplete(allItems) || (data.safetyScore !== null && data.safetyScore < 7.0)) {
+      // If a verified property fails checklist items, revert to PENDING_VERIFICATION
+      data.status = "PENDING_VERIFICATION";
+      data.physicalInspectionAt = null;
+    }
   }
 
   const updated = await prisma.property.update({

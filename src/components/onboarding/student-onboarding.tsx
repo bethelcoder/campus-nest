@@ -145,7 +145,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
         if (res.ok) {
           const { user, profile } = await res.json();
           if (user?.onboardingCompleted) {
-            router.push("/dashboard/student");
+            window.location.href = "/dashboard/student";
             return;
           }
 
@@ -354,7 +354,7 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
   async function handleSignOut() {
     await logOutFromFirebase();
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    window.location.href = "/login";
   }
 
   // Submit Step 1
@@ -447,12 +447,12 @@ export default function StudentOnboarding({ initialUser }: StudentOnboardingProp
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ? (typeof data.error === "string" ? data.error : JSON.stringify(data.error)) : "Could not complete onboarding");
+        setLoading(false);
         return;
       }
-      router.push("/dashboard/student");
+      window.location.href = "/dashboard/student";
     } catch {
       setError("Network error. Please try again.");
-    } finally {
       setLoading(false);
     }
   }

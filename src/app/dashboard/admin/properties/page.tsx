@@ -33,6 +33,8 @@ export default async function AdminPropertiesPage() {
     landlordEmail: p.landlord.email,
     activeReports: p.reports.length,
     physicalInspectionAt: p.physicalInspectionAt?.toISOString() ?? null,
+    physicalInspectorName: p.physicalInspectorName ?? null,
+    accreditationReference: p.accreditationReference ?? null,
   }));
 
   return (

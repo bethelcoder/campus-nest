@@ -129,7 +129,8 @@ export async function POST(req: NextRequest) {
       }));
     }
 
-    const status = computedScore !== null && computedScore >= 7 ? "VERIFIED" : "PENDING_VERIFICATION";
+    // All newly submitted properties must go through Admin review & verification before appearing to students
+    const status = "PENDING_VERIFICATION";
 
     const property = await prisma.property.create({
       data: {

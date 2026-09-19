@@ -20,6 +20,7 @@ export default async function SavedFavoritesPage() {
     include: {
       studentProfile: true,
       favorites: {
+        where: { property: { status: "VERIFIED" } },
         orderBy: { createdAt: "desc" },
         include: {
           property: {

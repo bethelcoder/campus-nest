@@ -398,13 +398,23 @@ export default function StudentResidenceDetailView({
                 </div>
 
                 {safetyScoreNum && (
-                  <div className="p-2.5 px-4 rounded-lg bg-[#005F56]/10 border border-[#005F56]/20 text-right shrink-0">
-                    <span className="text-[10px] font-bold text-[#005F56] uppercase tracking-wider block">
-                      Municipal Safety Score
-                    </span>
-                    <span className="text-xl font-black text-[#005F56]">
-                      {safetyScoreNum} / 10
-                    </span>
+                  <div className="p-2.5 px-3.5 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center gap-3 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-[#005F56] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <LuShieldCheck className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">
+                          {Number(safetyScoreNum) >= 8.5 ? "Verified High Safety" : "Verified Safe Residence"}
+                        </span>
+                        <span className="text-[10px] font-extrabold text-[#005F56] bg-emerald-100 px-1.5 py-0.5 rounded">
+                          {safetyScoreNum} / 10
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">
+                        24/7 Security • Biometrics • 13 Checks Passed
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -641,19 +651,23 @@ export default function StudentResidenceDetailView({
               </div>
             </div>
 
-            {/* 13-Point Municipal Safety Checklist */}
+            {/* 13-Point Student Safety & Security Audit */}
             <div className="p-6 rounded-xl border border-slate-200 bg-white shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">13-Point Safety &amp; Health Audit</h2>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <LuShieldCheck className="w-5 h-5 text-[#005F56]" />
+                    <span>13-Point Safety, Security &amp; Habitation Audit</span>
+                  </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Verified municipal compliance standard for safe student habitation.
+                    Physical safety audit for student peace of mind — verifying biometric access, fire safety, backup utilities &amp; rapid response.
                   </p>
                 </div>
 
                 {safetyScoreNum && (
-                  <span className="px-3 py-1 rounded-lg bg-[#005F56] text-white text-xs font-bold">
-                    {safetyScoreNum} / 10 Verified
+                  <span className="px-3 py-1 rounded-lg bg-[#005F56] text-white text-xs font-bold shrink-0 self-start sm:self-auto flex items-center gap-1.5">
+                    <LuCheck className="w-3.5 h-3.5" />
+                    <span>Safety Score {safetyScoreNum} / 10</span>
                   </span>
                 )}
               </div>

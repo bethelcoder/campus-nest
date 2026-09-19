@@ -55,6 +55,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Accredited residence not found" }, { status: 404 });
   }
 
+  // 1. Strict Rule: Cannot apply if student has an active tenancy or pending lease
+  const existingTenancy = await prisma.tenancy.findFirst({
+    where: {
+      studentId: session.sub,
+      status: { in: ["PENDING", "ACTIVE"] },
+    },
+    include: { property: { select: { title: true, id: true } } },
+  });
+
+  if (existingTenancy) {
+    const isPendingLease = existingTenancy.status === "PENDING";
+    return NextResponse.json(
+      {
+        error: isPendingLease
+          ? `You have a pending lease offer for "${existingTenancy.property.title}". Students cannot submit new applications while a lease is pending.`
+          : `You currently hold an active tenancy at "${existingTenancy.property.title}". Students cannot apply for new accommodation while an active lease is in effect.`,
+        code: "EXISTING_LEASE_CONFLICT",
+        propertyTitle: existingTenancy.property.title,
+        propertyId: existingTenancy.property.id,
+      },
+      { status: 409 }
+    );
+  }
+
+  // 2. Strict Rule: Cannot hold active applications at multiple residences simultaneously
+  const existingActiveApp = await prisma.application.findFirst({
+    where: {
+      studentId: session.sub,
+      propertyId: { not: property.id },
+      status: { in: ["PENDING", "UNDER_REVIEW", "OFFER_MADE", "ACCEPTED"] },
+    },
+    include: { property: { select: { title: true, id: true } } },
+  });
+
+  if (existingActiveApp) {
+    return NextResponse.json(
+      {
+        error: `You already have an active application under review for "${existingActiveApp.property.title}". University accreditation policy permits only one active residence application at a time. Please wait for the landlord's decision or withdraw your current application before applying to another residence.`,
+        code: "EXISTING_APPLICATION_CONFLICT",
+        propertyTitle: existingActiveApp.property.title,
+        existingPropertyId: existingActiveApp.property.id,
+        existingApplicationId: existingActiveApp.id,
+      },
+      { status: 409 }
+    );
+  }
+
   let selectedRoomId = parsed.data.roomListingId;
 
   // Fallback room selection if none specified

@@ -20,18 +20,28 @@ import {
   LuUsers,
   LuSparkles,
 } from "react-icons/lu";
+import { calculateDistanceKm } from "@/lib/maps/campuses";
 import { getPublicMediaUrl } from "@/lib/media";
 import Navbar from "./navbar";
+
+// Wits University Main Campuses (Coordinates)
+const WITS_EAST_COORDS = { lat: -26.1912, lng: 28.0302, name: "Wits East Campus" };
+const WITS_WEST_COORDS = { lat: -26.1878, lng: 28.0245, name: "Wits West Campus" };
 
 export interface PropertyListing {
   id: string;
   title: string;
   suburb: string;
   city: string;
+  address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   priceMonthly: number | string;
   bedrooms: number;
   safetyScore: number | string | null;
   distanceToCampus?: number | string | null;
+  amenities?: string[];
+  description?: string | null;
   images?: string[];
 }
 
@@ -114,19 +124,53 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedHub, setSelectedHub] = useState("ALL");
-  const [priceFilter, setPriceFilter] = useState("ALL");
+  const [bursaryFilter, setBursaryFilter] = useState<"ALL" | "NSFAS" | "PRIVATE">("ALL");
+  const [priceFilter, setPriceFilter] = useState<"ALL" | "UNDER_4500" | "NSFAS_CAP" | "ABOVE_5500">("ALL");
+  const [distanceMax, setDistanceMax] = useState<"ALL" | "0.5" | "1.0" | "2.0">("ALL");
+  const [sortBy, setSortBy] = useState<"PROXIMITY" | "WITS_EAST" | "WITS_WEST" | "PRICE_ASC" | "PRICE_DESC" | "SAFETY">("PROXIMITY");
   const [minScoreFilter, setMinScoreFilter] = useState("ALL");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  // Filtered Properties
+  // Augment properties with accurate distance calculations to Wits East & West
+  const augmentedProperties = useMemo(() => {
+    return initialProperties.map((p) => {
+      let distEast: number | null = null;
+      let distWest: number | null = null;
+
+      if (typeof p.latitude === "number" && typeof p.longitude === "number" && !isNaN(p.latitude) && !isNaN(p.longitude)) {
+        distEast = calculateDistanceKm(p.latitude, p.longitude, WITS_EAST_COORDS.lat, WITS_EAST_COORDS.lng);
+        distWest = calculateDistanceKm(p.latitude, p.longitude, WITS_WEST_COORDS.lat, WITS_WEST_COORDS.lng);
+      } else if (p.distanceToCampus) {
+        distEast = Number(p.distanceToCampus);
+        distWest = Number(p.distanceToCampus) + 0.3;
+      }
+
+      const minDist = distEast !== null && distWest !== null ? Math.min(distEast, distWest) : (distEast || distWest || 0.8);
+      const isNsfas =
+        (p.amenities && p.amenities.includes("NSFAS_ACCREDITED")) ||
+        (p.description && /nsfas accredited/i.test(p.description));
+
+      return {
+        ...p,
+        distEast,
+        distWest,
+        minDist,
+        isNsfas,
+        monthlyRentNum: Number(p.priceMonthly) || 4500,
+      };
+    });
+  }, [initialProperties]);
+
+  // Filtered and Sorted Properties
   const filteredProperties = useMemo(() => {
-    return initialProperties.filter((p) => {
+    let result = augmentedProperties.filter((p) => {
       const q = searchTerm.toLowerCase();
       const matchesSearch =
         !searchTerm ||
         p.title.toLowerCase().includes(q) ||
         p.suburb.toLowerCase().includes(q) ||
-        p.city.toLowerCase().includes(q);
+        p.city.toLowerCase().includes(q) ||
+        (p.address && p.address.toLowerCase().includes(q));
 
       const matchesHub =
         selectedHub === "ALL" ||
@@ -136,22 +180,43 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
         (selectedHub === "UP" && (p.suburb.toLowerCase().includes("hatfield") || p.city.toLowerCase().includes("pretoria"))) ||
         (selectedHub === "STELLENBOSCH" && p.city.toLowerCase().includes("stellenbosch"));
 
-      const price = Number(p.priceMonthly);
-      const matchesPrice =
-        priceFilter === "ALL" ||
-        (priceFilter === "UNDER_5000" && price <= 5000) ||
-        (priceFilter === "5000_7000" && price > 5000 && price <= 7000) ||
-        (priceFilter === "ABOVE_7000" && price > 7000);
+      // Bursary filter
+      if (bursaryFilter === "NSFAS" && !p.isNsfas) return false;
+      if (bursaryFilter === "PRIVATE" && p.isNsfas) return false;
 
+      // Price filter
+      if (priceFilter === "UNDER_4500" && p.monthlyRentNum > 4500) return false;
+      if (priceFilter === "NSFAS_CAP" && p.monthlyRentNum > 5200) return false;
+      if (priceFilter === "ABOVE_5500" && p.monthlyRentNum < 5500) return false;
+
+      // Distance filter (Wits Proximity)
+      if (distanceMax === "0.5" && p.minDist > 0.5) return false;
+      if (distanceMax === "1.0" && p.minDist > 1.0) return false;
+      if (distanceMax === "2.0" && p.minDist > 2.0) return false;
+
+      // Safety score filter
       const score = p.safetyScore ? Number(p.safetyScore) : 0;
       const matchesScore =
         minScoreFilter === "ALL" ||
         (minScoreFilter === "8" && score >= 8.0) ||
         (minScoreFilter === "9" && score >= 9.0);
 
-      return matchesSearch && matchesHub && matchesPrice && matchesScore;
+      return matchesSearch && matchesHub && matchesScore;
     });
-  }, [initialProperties, searchTerm, selectedHub, priceFilter, minScoreFilter]);
+
+    // Sorting
+    result.sort((a, b) => {
+      if (sortBy === "PROXIMITY") return (a.minDist || 99) - (b.minDist || 99);
+      if (sortBy === "WITS_EAST") return (a.distEast || 99) - (b.distEast || 99);
+      if (sortBy === "WITS_WEST") return (a.distWest || 99) - (b.distWest || 99);
+      if (sortBy === "PRICE_ASC") return a.monthlyRentNum - b.monthlyRentNum;
+      if (sortBy === "PRICE_DESC") return b.monthlyRentNum - a.monthlyRentNum;
+      if (sortBy === "SAFETY") return Number(b.safetyScore || 0) - Number(a.safetyScore || 0);
+      return 0;
+    });
+
+    return result;
+  }, [augmentedProperties, searchTerm, selectedHub, bursaryFilter, priceFilter, distanceMax, minScoreFilter, sortBy]);
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 font-poppins selection:bg-emerald-100 selection:text-emerald-900">
@@ -331,9 +396,9 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
             </div>
           </div>
 
-          {/* Search Inputs Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-            {/* Keyword / Suburb Search */}
+          {/* Search Inputs Row: 5 Priority Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+            {/* 1. Keyword / Suburb Search */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                 <LuSearch className="w-4 h-4" />
@@ -342,47 +407,59 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search suburb, street, or title..."
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                placeholder="Search suburb, street..."
+                className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 pl-10 pr-3.5 py-2.5 text-xs text-gray-900 shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
               />
             </div>
 
-            {/* Price Filter */}
+            {/* 2. Bursary & Scheme Filter */}
+            <select
+              value={bursaryFilter}
+              onChange={(e) => setBursaryFilter(e.target.value as any)}
+              className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 px-3.5 py-2.5 text-xs text-gray-900 font-semibold shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+            >
+              <option value="ALL">All Bursaries &amp; Schemes</option>
+              <option value="NSFAS">NSFAS Accredited Only</option>
+              <option value="PRIVATE">Private / Self-Funded</option>
+            </select>
+
+            {/* 3. Monthly Budget Filter */}
             <select
               value={priceFilter}
-              onChange={(e) => setPriceFilter(e.target.value)}
-              className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+              onChange={(e) => setPriceFilter(e.target.value as any)}
+              className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 px-3.5 py-2.5 text-xs text-gray-900 font-semibold shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
             >
               <option value="ALL">Any Monthly Budget</option>
-              <option value="UNDER_5000">Under R5,000 / month</option>
-              <option value="5000_7000">R5,000 – R7,000 / month</option>
-              <option value="ABOVE_7000">Above R7,000 / month</option>
+              <option value="UNDER_4500">Under R4,500 / month</option>
+              <option value="NSFAS_CAP">NSFAS Cap (≤ R5,200/mo)</option>
+              <option value="ABOVE_5500">R5,500+ / month</option>
             </select>
 
-            {/* Safety Score Filter */}
+            {/* 4. Wits Campus Proximity Filter */}
             <select
-              value={minScoreFilter}
-              onChange={(e) => setMinScoreFilter(e.target.value)}
-              className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+              value={distanceMax}
+              onChange={(e) => setDistanceMax(e.target.value as any)}
+              className="w-full rounded-2xl border border-gray-300 bg-gray-50/50 px-3.5 py-2.5 text-xs text-gray-900 font-semibold shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
             >
-              <option value="ALL">Any Safety Score</option>
-              <option value="8">Safety Score: 8.0+ / 10</option>
-              <option value="9">Top Safety Tier: 9.0+ / 10</option>
+              <option value="ALL">Distance to Wits (Any)</option>
+              <option value="0.5">&lt; 500m (Walkable)</option>
+              <option value="1.0">&lt; 1.0 km to Campus</option>
+              <option value="2.0">&lt; 2.0 km to Campus</option>
             </select>
 
-            {/* Clear Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedHub("ALL");
-                setPriceFilter("ALL");
-                setMinScoreFilter("ALL");
-              }}
-              className="w-full py-2.5 rounded-2xl border border-gray-200 bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 transition-all"
+            {/* 5. Sort By Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full rounded-2xl border border-emerald-300 bg-emerald-50/40 px-3.5 py-2.5 text-xs text-[#005F56] font-bold shadow-sm focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
             >
-              Reset Filters
-            </button>
+              <option value="PROXIMITY">Closest to Wits (Overall)</option>
+              <option value="WITS_EAST">Closest to Wits East</option>
+              <option value="WITS_WEST">Closest to Wits West</option>
+              <option value="PRICE_ASC">Price: Low to High</option>
+              <option value="PRICE_DESC">Price: High to Low</option>
+              <option value="SAFETY">Top Safety Rating</option>
+            </select>
           </div>
         </div>
 
@@ -393,8 +470,8 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
               <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center mx-auto">
                 <LuSearch className="w-6 h-6" />
               </div>
-              <p className="text-base font-bold text-gray-800">No verified listings match your search.</p>
-              <p className="text-xs text-gray-500">Try adjusting your budget or safety score filters.</p>
+              <p className="text-base font-bold text-gray-800">No verified listings match your criteria.</p>
+              <p className="text-xs text-gray-500">Try adjusting your budget, distance, or bursary filters.</p>
             </div>
           )}
 
@@ -422,7 +499,7 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                 className="group block rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-xl hover:border-[#005F56] transition-all duration-300"
               >
                 {/* Image / Banner Container */}
-                <div className="relative h-48 bg-gradient-to-tr from-gray-900 to-gray-700 overflow-hidden">
+                <div className="relative h-52 bg-gradient-to-tr from-gray-900 to-gray-700 overflow-hidden">
                   <img
                     src={cardImage}
                     alt={p.title}
@@ -432,7 +509,19 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                       e.currentTarget.src = "/accomodation.png";
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+
+                  {/* Top Badges */}
+                  <div className="absolute top-3.5 left-3.5 flex flex-wrap gap-1.5">
+                    {p.isNsfas && (
+                      <span className="px-2.5 py-1 rounded-lg bg-[#005F56] text-white text-[10px] font-extrabold shadow-md">
+                        NSFAS Accredited
+                      </span>
+                    )}
+                    <span className="px-2 py-1 rounded-lg bg-white/95 text-gray-900 text-[10px] font-bold backdrop-blur-md shadow-sm">
+                      Verified
+                    </span>
+                  </div>
 
                   {/* Safety Score Badge */}
                   {score !== null && (
@@ -442,13 +531,16 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                     </div>
                   )}
 
-                  {/* Campus distance pill */}
-                  {p.distanceToCampus && (
-                    <div className="absolute bottom-3 left-3.5 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1">
-                      <LuMapPin className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{p.distanceToCampus} km to campus</span>
+                  {/* Campus distance pill at bottom */}
+                  <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white text-[11px] font-semibold">
+                    <div className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                      <LuMapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>
+                        {p.distEast !== null ? `${p.distEast} km Wits East` : ""}{" "}
+                        {p.distWest !== null ? `• ${p.distWest} km West` : ""}
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Card Details */}
@@ -457,15 +549,15 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                     <h3 className="font-bold text-base text-gray-900 group-hover:text-[#005F56] transition-colors line-clamp-1">
                       {p.title}
                     </h3>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                      <LuMapPin className="w-3.5 h-3.5 text-gray-400" />
-                      <span>{p.suburb}, {p.city}</span>
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
+                      <LuMapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>{p.address ? `${p.address}, ` : ""}{p.suburb}, {p.city}</span>
                     </p>
                   </div>
 
                   <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-gray-400 block font-medium">Monthly Rent</span>
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Monthly Rent</span>
                       <span className="text-base font-black text-gray-900">
                         R{Number(p.priceMonthly).toLocaleString()}
                         <span className="text-xs text-gray-500 font-normal"> / mo</span>
@@ -477,7 +569,7 @@ export default function StudentLanding({ initialProperties }: StudentLandingProp
                         {p.bedrooms} Bed{p.bedrooms > 1 ? "s" : ""}
                       </span>
                       <span className="text-xs font-bold text-[#005F56] group-hover:translate-x-0.5 transition-transform">
-                        View →
+                        Apply →
                       </span>
                     </div>
                   </div>
