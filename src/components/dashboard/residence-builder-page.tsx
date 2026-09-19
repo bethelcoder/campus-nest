@@ -23,6 +23,7 @@ import {
   LuTrash2,
   LuPlus,
   LuCopy,
+  LuSave,
   LuChevronDown,
   LuChevronUp,
   LuImage,
@@ -47,6 +48,16 @@ import {
 } from "react-icons/lu";
 import { getPublicMediaUrl } from "@/lib/media";
 import { STANDARD_CHECKLIST, calculateSafetyScore, type ChecklistTemplateItem } from "@/lib/safety";
+import { extractRoomsFromProperty } from "@/lib/rooms";
+
+// Extract the landlord-written portion of a description, dropping any
+// previously generated room-inventory block so it can be regenerated cleanly.
+function extractBaseDescription(desc?: string | null): string {
+  if (!desc) return "";
+  const i = desc.search(/\n\s*\n\s*(?:🏠\s*)?Room (?:Configurations|Inventory) & Rates:/i);
+  if (i >= 0) return desc.slice(0, i).trim();
+  return desc.trim();
+}
 
 export interface RoomTypeItem {
   id: string;
@@ -227,6 +238,9 @@ interface ResidenceBuilderPageProps {
     email: string;
     entityType?: string | null;
   };
+  // When provided, the builder runs in edit mode: it pre-fills every step from the
+  // existing residence and saves via PATCH instead of creating a new listing.
+  initialProperty?: any;
 }
 
 const SA_UNIVERSITIES = [
@@ -332,8 +346,9 @@ const AMENITY_CATEGORIES = [
   },
 ];
 
-export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps) {
+export default function ResidenceBuilderPage({ user, initialProperty }: ResidenceBuilderPageProps) {
   const router = useRouter();
+  const isEditMode = Boolean(initialProperty?.id);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -342,20 +357,38 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
   // Active Tab View within Builder
   const [activeTab, setActiveTab] = useState<"basics" | "capacity" | "amenities" | "safety" | "media">("basics");
 
-  // Basic Info Form State (Start blank, no prefilled values)
-  const [basics, setBasics] = useState({
-    title: "",
-    buildingType: "STUDENT_BLOCK",
-    institution: "",
-    campus: "",
-    distanceToCampus: "",
-    transitMode: "WALKING",
-    streetAddress: "",
-    suburb: "",
-    city: "",
-    province: "Gauteng",
-    postalCode: "",
-    description: "",
+  // Basic Info Form State (Start blank for new listings; prefill in edit mode)
+  const [basics, setBasics] = useState(() => {
+    if (!initialProperty) {
+      return {
+        title: "",
+        buildingType: "STUDENT_BLOCK",
+        institution: "",
+        campus: "",
+        distanceToCampus: "",
+        transitMode: "WALKING",
+        streetAddress: "",
+        suburb: "",
+        city: "",
+        province: "Gauteng",
+        postalCode: "",
+        description: "",
+      };
+    }
+    return {
+      title: initialProperty.title || "",
+      buildingType: "STUDENT_BLOCK",
+      institution: "",
+      campus: "",
+      distanceToCampus: initialProperty.distanceToCampus ? String(initialProperty.distanceToCampus) : "",
+      transitMode: "WALKING",
+      streetAddress: initialProperty.address || "",
+      suburb: initialProperty.suburb || "",
+      city: initialProperty.city || "",
+      province: "Gauteng",
+      postalCode: "",
+      description: extractBaseDescription(initialProperty.description),
+    };
   });
 
   // Live Student Public URL State (Clean slug: /residences/name)
@@ -378,27 +411,77 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     }
   };
 
-  // Room Configuration & Capacity State (Start with 1 blank room)
-  const [rooms, setRooms] = useState<RoomTypeItem[]>([
-    {
-      id: "room-1",
-      name: "",
-      type: "SINGLE_STANDARD",
-      quantity: 1,
-      bedsPerRoom: 1,
-      bathroomType: "SHARED_1_2",
-      monthlyPrice: 0,
-      deposit: 0,
-      sizeSqm: "",
-      isNsfasCapped: false,
-      availabilityStatus: "AVAILABLE_NOW",
-      features: [],
-      photos: [],
-      isExpanded: true,
-    },
-  ]);
+  // Room Configuration & Capacity State (Start with 1 blank room; prefill from
+  // the residence's current configuration in edit mode)
+  const [rooms, setRooms] = useState<RoomTypeItem[]>(() => {
+    if (!initialProperty) {
+      return [
+        {
+          id: "room-1",
+          name: "",
+          type: "SINGLE_STANDARD",
+          quantity: 1,
+          bedsPerRoom: 1,
+          bathroomType: "SHARED_1_2",
+          monthlyPrice: 0,
+          deposit: 0,
+          sizeSqm: "",
+          isNsfasCapped: false,
+          availabilityStatus: "AVAILABLE_NOW",
+          features: [],
+          photos: [],
+          isExpanded: true,
+        },
+      ];
+    }
 
-  const [isNsfasAccredited, setIsNsfasAccredited] = useState(false);
+    const parsed = extractRoomsFromProperty(initialProperty).map((r) => ({
+      id: `${initialProperty.id}-edit-${r.id}`,
+      name: r.name,
+      type: (["SINGLE_STANDARD", "SINGLE_ENSUITE", "DOUBLE_SHARING", "TRIPLE_SHARING", "QUAD_SHARING", "STUDIO_BACHELOR", "ONE_BED_APARTMENT", "CUSTOM"].includes(r.type)
+        ? r.type
+        : "SINGLE_STANDARD") as RoomTypeItem["type"],
+      quantity: r.quantity,
+      bedsPerRoom: r.bedsPerRoom,
+      bathroomType: r.bathroomType,
+      monthlyPrice: r.monthlyPrice,
+      deposit: r.deposit,
+      sizeSqm: r.sizeSqm || "",
+      isNsfasCapped: r.isNsfasCapped,
+      availabilityStatus: r.availabilityStatus === "OCCUPIED" ? "LIMITED_BEDS" : r.availabilityStatus,
+      features: [...r.features],
+      photos: [...r.photos],
+      isExpanded: false,
+    }));
+
+    return parsed.length > 0
+      ? parsed
+      : [
+          {
+            id: "room-1",
+            name: "",
+            type: "SINGLE_STANDARD",
+            quantity: 1,
+            bedsPerRoom: 1,
+            bathroomType: "SHARED_1_2",
+            monthlyPrice: 0,
+            deposit: 0,
+            sizeSqm: "",
+            isNsfasCapped: false,
+            availabilityStatus: "AVAILABLE_NOW",
+            features: [],
+            photos: [],
+            isExpanded: true,
+          },
+        ];
+  });
+
+  const [isNsfasAccredited, setIsNsfasAccredited] = useState<boolean>(() => {
+    if (!initialProperty) return false;
+    const amenities: string[] = initialProperty.amenities || [];
+    const parsed = extractRoomsFromProperty(initialProperty);
+    return amenities.includes("NSFAS_ACCREDITED") || parsed.some((r) => r.isNsfasCapped);
+  });
   const [uploadingRoomPhotoId, setUploadingRoomPhotoId] = useState<string | null>(null);
 
   // Dynamic Building Capacity Metrics
@@ -593,30 +676,47 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
     );
   };
 
-  // Selected Amenities (Starts completely empty)
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  // Selected Amenities (Starts completely empty; prefill in edit mode)
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(() => {
+    if (!initialProperty) return [];
+    return (initialProperty.amenities || []).filter((a: string) => a !== "NSFAS_ACCREDITED");
+  });
 
-  // 13-Point Checklist State (ALL start as null / unanswered)
+  // 13-Point Checklist State (ALL start as null / unanswered; prefill with the
+  // landlord's existing answers in edit mode, keeping the checklistItem ids)
   const [checklistAnswers, setChecklistAnswers] = useState<
     Array<{
+      id?: string;
       category: ChecklistTemplateItem["category"];
       label: string;
       weight: number;
       passed: boolean | null;
       notes?: string;
     }>
-  >(
-    STANDARD_CHECKLIST.map((item) => ({
+  >(() => {
+    if (initialProperty?.checklistItems?.length) {
+      return initialProperty.checklistItems.map((item: any) => ({
+        id: item.id,
+        category: item.category,
+        label: item.label,
+        weight: item.weight,
+        passed: item.passed ?? null,
+        notes: item.notes || "",
+      }));
+    }
+    return STANDARD_CHECKLIST.map((item) => ({
       category: item.category,
       label: item.label,
       weight: item.weight,
       passed: null,
       notes: "",
-    }))
-  );
+    }));
+  });
 
   // Media and Document State
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>(() =>
+    initialProperty?.images?.length ? initialProperty.images.filter(Boolean) : []
+  );
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Live Safety Score Calculation (Only when evaluated)
@@ -756,16 +856,25 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
       });
 
       const detailedDescription = basics.description
-        ? `${basics.description}\n\nRoom Inventory & Rates:\n${roomSummaryLines.join(
+        ? `${basics.description}\n\n🏠 Room Inventory & Rates:\n${roomSummaryLines.join(
             "\n"
           )}`
         : `Student housing located in ${basics.suburb}, ${basics.city}.${
             basics.institution ? ` Nearest institution: ${basics.institution} (${basics.campus}).` : ""
-          }\n\nRoom Inventory & Rates:\n${roomSummaryLines.join("\n")}`;
+          }\n\n🏠 Room Inventory & Rates:\n${roomSummaryLines.join("\n")}`;
 
       // Collect all room photos and property photos
       const allRoomPhotos = rooms.flatMap((r) => r.photos);
       const combinedPhotos = Array.from(new Set([...photos, ...allRoomPhotos]));
+
+      // In edit mode, attach existing checklistItem ids so the PATCH route can
+      // update the exact inventory answers (and recompute the safety score).
+      // For new listings the full checklist is submitted for creation.
+      const checklistPayload = isEditMode
+        ? checklistAnswers
+            .map((a) => ({ id: a.id, passed: a.passed, notes: a.notes || "" }))
+            .filter((a) => a.id)
+        : checklistAnswers;
 
       const payload = {
         title: basics.title,
@@ -774,31 +883,41 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
         city: basics.city,
         priceMonthly: basePrice,
         bedrooms: buildingMetrics.totalBedrooms || 1,
-        bathrooms: 1,
+        bathrooms: isEditMode ? initialProperty.bathrooms || 1 : 1,
         maxOccupants: buildingMetrics.totalBeds || 1,
         description: detailedDescription,
         amenities: isNsfasAccredited
           ? Array.from(new Set([...selectedAmenities, "NSFAS_ACCREDITED"]))
           : selectedAmenities,
-        distanceToCampus: basics.distanceToCampus ? Number(basics.distanceToCampus) : undefined,
+        distanceToCampus: basics.distanceToCampus
+          ? Number(basics.distanceToCampus)
+          : isEditMode
+          ? null
+          : undefined,
         images: combinedPhotos,
-        checklistAnswers,
+        checklistAnswers: checklistPayload,
       };
 
-      const res = await fetch("/api/properties", {
-        method: "POST",
+      const res = await fetch(isEditMode ? `/api/properties/${initialProperty.id}` : "/api/properties", {
+        method: isEditMode ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : "Failed to create residence listing");
+        throw new Error(
+          typeof data.error === "string"
+            ? data.error
+            : isEditMode
+            ? "Failed to update residence listing"
+            : "Failed to create residence listing"
+        );
       }
 
       setSuccess(true);
       setTimeout(() => {
-        router.push("/landlord/properties");
+        router.push(isEditMode ? `/landlord/properties/${initialProperty.id}` : "/landlord/properties");
       }, 1200);
     } catch (err: any) {
       setError(err.message || "Failed to create residence listing.");
@@ -822,14 +941,20 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             </Link>
             <span className="text-slate-300">/</span>
             <span className="text-xs font-semibold text-slate-500">
-              New Listing
+              {isEditMode ? "Edit Listing" : "New Listing"}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {basics.title ? basics.title : "Add New Student Residence"}
+            {basics.title
+              ? basics.title
+              : isEditMode
+              ? "Edit Student Residence"
+              : "Add New Student Residence"}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Provide property details, room configurations, living amenities, utilities, and safety inspection.
+            {isEditMode
+              ? "Update property details, room configurations, amenities, utilities, and safety inspection for this residence."
+              : "Provide property details, room configurations, living amenities, utilities, and safety inspection."}
           </p>
         </div>
 
@@ -843,17 +968,17 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             {saving ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Publishing Listing...</span>
+                <span>{isEditMode ? "Saving Changes..." : "Publishing Listing..."}</span>
               </>
             ) : success ? (
               <>
                 <LuCheck className="w-4 h-4" />
-                <span>Listing Published!</span>
+                <span>{isEditMode ? "Changes Saved!" : "Listing Published!"}</span>
               </>
             ) : (
               <>
-                <LuSparkles className="w-4 h-4" />
-                <span>Publish Residence</span>
+                {isEditMode ? <LuSave className="w-4 h-4" /> : <LuSparkles className="w-4 h-4" />}
+                <span>{isEditMode ? "Save Changes" : "Publish Residence"}</span>
               </>
             )}
           </button>
@@ -1854,7 +1979,9 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
             <div className="flex items-center gap-2">
               <LuShieldCheck className="w-5 h-5 text-[#005F56]" />
               <span className="text-xs text-slate-600">
-                Ready to publish your student residence listing.
+                {isEditMode
+                  ? "Ready to save your residence changes."
+                  : "Ready to publish your student residence listing."}
               </span>
             </div>
 
@@ -1867,17 +1994,17 @@ export default function ResidenceBuilderPage({ user }: ResidenceBuilderPageProps
               {saving ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Publishing Listing...</span>
+                  <span>{isEditMode ? "Saving Changes..." : "Publishing Listing..."}</span>
                 </>
               ) : success ? (
                 <>
                   <LuCheck className="w-4 h-4" />
-                  <span>Published Successfully!</span>
+                  <span>{isEditMode ? "Changes Saved!" : "Published Successfully!"}</span>
                 </>
               ) : (
                 <>
-                  <LuSparkles className="w-4 h-4" />
-                  <span>Complete &amp; Publish Listing</span>
+                  {isEditMode ? <LuSave className="w-4 h-4" /> : <LuSparkles className="w-4 h-4" />}
+                  <span>{isEditMode ? "Save Residence Changes" : "Complete &amp; Publish Listing"}</span>
                 </>
               )}
             </button>

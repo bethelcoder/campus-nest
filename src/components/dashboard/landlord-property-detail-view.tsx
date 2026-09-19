@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   LuBuilding2,
   LuMapPin,
@@ -28,8 +29,13 @@ import {
   LuGraduationCap,
   LuAward,
   LuPlus,
+  LuPencil,
+  LuTrash2,
+  LuTriangle,
+  LuInfo,
 } from "react-icons/lu";
 import { extractRoomsFromProperty, AMENITY_METADATA, ROOM_FEATURE_LABELS, type ParsedRoom } from "@/lib/rooms";
+import { getPublicMediaUrl } from "@/lib/media";
 
 interface LandlordPropertyDetailViewProps {
   property: any;
@@ -40,14 +46,24 @@ interface LandlordPropertyDetailViewProps {
     email: string;
     entityType?: string | null;
   };
+  liveTenancies?: number;
+  unansweredApplications?: number;
 }
 
 export default function LandlordPropertyDetailView({
   property,
   user,
+  liveTenancies = 0,
+  unansweredApplications = 0,
 }: LandlordPropertyDetailViewProps) {
   const [activeViewTab, setActiveViewTab] = useState<"rooms" | "amenities" | "tenants" | "safety">("rooms");
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  const router = useRouter();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const rooms: ParsedRoom[] = extractRoomsFromProperty(property);
 
@@ -72,6 +88,26 @@ export default function LandlordPropertyDetailView({
     {}
   );
 
+  const blockDelete = liveTenancies > 0 || unansweredApplications > 0;
+
+  const handleDelete = async () => {
+    if (deleteConfirmText.trim() !== property.title.trim()) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/properties/${property.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "Residence could not be deleted.");
+      }
+      router.push("/landlord/properties");
+      router.refresh();
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete residence.");
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16 font-poppins">
       {/* Lightbox Modal for Photos */}
@@ -81,7 +117,7 @@ export default function LandlordPropertyDetailView({
           onClick={() => setSelectedPhoto(null)}
         >
           <div className="relative max-w-4xl max-h-[85vh] rounded-2xl overflow-hidden shadow-2xl bg-black">
-            <img src={selectedPhoto} alt="Room preview" className="w-full h-full object-contain" />
+            <img src={getPublicMediaUrl(selectedPhoto)} alt="Room preview" className="w-full h-full object-contain" />
             <button
               type="button"
               onClick={() => setSelectedPhoto(null)}
@@ -148,6 +184,14 @@ export default function LandlordPropertyDetailView({
           >
             <LuUserCheck className="w-3.5 h-3.5" />
             <span>Manage Tenancies ({occupiedBeds})</span>
+          </Link>
+
+          <Link
+            href={`/landlord/properties/${property.id}/edit`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-gray-300 hover:border-emerald-600 hover:text-emerald-700 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <LuPencil className="w-3.5 h-3.5" />
+            <span>Edit Residence</span>
           </Link>
 
           <Link
@@ -232,7 +276,7 @@ export default function LandlordPropertyDetailView({
                 aria-label={`View residence photo ${index + 1}`}
               >
                 <img
-                  src={imageUrl}
+                  src={getPublicMediaUrl(imageUrl)}
                   alt={`${property.title} photo ${index + 1}`}
                   className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                 />
@@ -388,7 +432,7 @@ export default function LandlordPropertyDetailView({
                               onClick={() => setSelectedPhoto(photoUrl)}
                               className="relative rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-100 cursor-pointer group"
                             >
-                              <img src={photoUrl} alt={`${room.name} ${pIdx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                              <img src={getPublicMediaUrl(photoUrl)} alt={`${room.name} ${pIdx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                                 <LuEye className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
@@ -643,6 +687,95 @@ export default function LandlordPropertyDetailView({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+    {/* ================= DANGER ZONE ================= */}
+      <section className="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-rose-800 flex items-center gap-2">
+              <LuTrash2 className="w-4 h-4" />
+              Delete This Residence
+            </h2>
+            <p className="text-xs text-rose-700/80 mt-0.5">
+              {blockDelete
+                ? `Currently blocked: ${liveTenancies} active tenanc${
+                    liveTenancies === 1 ? "y" : "ies"
+                  } and ${unansweredApplications} unanswered application${
+                    unansweredApplications === 1 ? "" : "s"
+                  } must be resolved or ended first.`
+                : "Permanently removes this listing and all of its data. This action cannot be undone."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteError(null);
+              setDeleteOpen(true);
+            }}
+            disabled={blockDelete}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-all cursor-pointer shrink-0"
+          >
+            <LuTrash2 className="w-3.5 h-3.5" />
+            <span>Delete Residence</span>
+          </button>
+        </div>
+      </section>
+
+      {/* ================= DELETE CONFIRM MODAL ================= */}
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="w-11 h-11 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <LuTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Delete &quot;{property.title}&quot;?</h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                This permanently removes the listing, its photos, room configurations, and safety checklist.{" "}
+                <span className="font-semibold text-rose-600">This cannot be undone.</span>
+              </p>
+            </div>
+            {deleteError && (
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
+                <LuInfo className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+            <div>
+              <label className="block text-[11px] font-bold text-gray-600 mb-1.5">
+                Type <span className="text-rose-600">{property.title}</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-600/20 focus:border-rose-600 text-xs text-gray-900"
+                placeholder={property.title}
+              />
+            </div>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteConfirmText("");
+                }}
+                disabled={deleting}
+                className="flex-1 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || deleteConfirmText.trim() !== property.title.trim()}
+                className="flex-1 rounded-xl px-4 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 transition-colors cursor-pointer"
+              >
+                {deleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
           </div>
         </div>
       )}

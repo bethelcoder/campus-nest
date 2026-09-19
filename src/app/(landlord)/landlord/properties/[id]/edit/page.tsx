@@ -2,11 +2,11 @@ import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import B2cLandlordLayout from "@/components/dashboard/b2c-landlord-layout";
-import LandlordPropertyDetailView from "@/components/dashboard/landlord-property-detail-view";
+import ResidenceBuilderPage from "@/components/dashboard/residence-builder-page";
 
 export const dynamic = "force-dynamic";
 
-export default async function LandlordPropertyDetailPage({
+export default async function EditPropertyPage({
   params,
 }: {
   params: { id: string };
@@ -16,7 +16,7 @@ export default async function LandlordPropertyDetailPage({
     notFound();
   }
 
-  const [dbUser, property, dbProperties, liveTenancies, unansweredApplications] = await Promise.all([
+  const [dbUser, property, dbProperties] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.sub },
       include: { landlordProfile: true },
@@ -25,21 +25,6 @@ export default async function LandlordPropertyDetailPage({
       where: { id: params.id },
       include: {
         checklistItems: true,
-        applications: {
-          include: {
-            student: {
-              include: { studentProfile: true },
-            },
-          },
-        },
-        tenancies: {
-          include: {
-            student: {
-              include: { studentProfile: true },
-            },
-            confirmationLetter: true,
-          },
-        },
       },
     }),
     prisma.property.findMany({
@@ -50,12 +35,6 @@ export default async function LandlordPropertyDetailPage({
         bedrooms: true,
         safetyScore: true,
       },
-    }),
-    prisma.tenancy.count({
-      where: { propertyId: params.id, NOT: { status: "ENDED" } },
-    }),
-    prisma.application.count({
-      where: { propertyId: params.id, NOT: { status: "REJECTED" } },
     }),
   ]);
 
@@ -82,21 +61,11 @@ export default async function LandlordPropertyDetailPage({
     depositAmount: property.depositAmount ? Number(property.depositAmount) : null,
     distanceToCampus: property.distanceToCampus ? Number(property.distanceToCampus) : null,
     safetyScore: property.safetyScore ? Number(property.safetyScore) : null,
-    tenancies: (property.tenancies || []).map((t) => ({
-      ...t,
-      monthlyRent: t.monthlyRent ? Number(t.monthlyRent) : Number(property.priceMonthly),
-      deposit: t.deposit ? Number(t.deposit) : null,
-    })),
   };
 
   return (
     <B2cLandlordLayout activeTab="My Residences" user={user} properties={properties}>
-      <LandlordPropertyDetailView
-        property={serializedProperty}
-        user={user}
-        liveTenancies={liveTenancies}
-        unansweredApplications={unansweredApplications}
-      />
+      <ResidenceBuilderPage user={user} initialProperty={serializedProperty} />
     </B2cLandlordLayout>
   );
 }

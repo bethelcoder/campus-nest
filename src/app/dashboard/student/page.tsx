@@ -6,6 +6,8 @@ import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
 import FavoriteButton from "@/app/properties/favorite-button";
 import ApplyButton from "@/app/properties/apply-button";
+import { getPublicMediaUrl, FALLBACK_RESIDENCE_IMAGES } from "@/lib/media";
+import { LuShieldCheck, LuMapPin } from "react-icons/lu";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,13 @@ export default async function StudentDashboardPage() {
       priceMonthly: unknown;
       safetyScore: unknown;
       bedrooms: number;
+      bathrooms: number | null;
+      maxOccupants: number | null;
+      depositAmount: unknown;
+      distanceToCampus: unknown;
+      images: string[];
+      description: string | null;
+      amenities: string[];
       landlord: {
         name: string;
         surname: string;
@@ -262,7 +271,7 @@ export default async function StudentDashboardPage() {
         <section id="saved" className="space-y-4 scroll-mt-6">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">Your shortlist</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">Your shortlist</p>
               <h2 className="mt-1 text-xl font-bold text-[#0F172A]">Saved Favorites</h2>
             </div>
             <Link href="/dashboard/student/saved" className="text-xs font-bold text-[#7C3AED] hover:underline">
@@ -272,50 +281,128 @@ export default async function StudentDashboardPage() {
 
           {favorites.length > 0 ? (
             <div className="grid gap-5 md:grid-cols-2">
-              {favorites.map((favorite) => {
+{favorites.map((favorite) => {
                 const prop = favorite.property;
                 const provider =
                   prop.landlord.landlordProfile?.companyName ||
                   `${prop.landlord.name} ${prop.landlord.surname}`;
 
+                const isNsfas =
+                  (prop.amenities || []).includes("NSFAS_ACCREDITED") ||
+                  (prop.description && /nsfas accredited/i.test(prop.description));
+                const publicAmenities = (prop.amenities || []).filter((a) => a !== "NSFAS_ACCREDITED");
+
+                const resolvedImages = (prop.images || []).map(getPublicMediaUrl).filter(Boolean);
+                const photoCount = resolvedImages.length;
+                const thumbnails = resolvedImages.slice(1, 4);
+                const fallbackIndex =
+                  [...prop.id].reduce((acc, c) => acc + c.charCodeAt(0), 0) % FALLBACK_RESIDENCE_IMAGES.length;
+                const coverImage = resolvedImages[0] || FALLBACK_RESIDENCE_IMAGES[fallbackIndex];
+
                 return (
                   <article
                     key={favorite.id}
-                    className="flex flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:shadow-md"
+                    className="group flex flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:shadow-md"
                   >
-                    <div className="relative flex h-28 items-end bg-gradient-to-br from-[#312E81] via-[#4338CA] to-[#0F766E] p-4 text-white">
-                      <div className="absolute right-4 top-4 flex items-center gap-2">
-                        <span className="rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide backdrop-blur">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-[#E2E8F0]">
+                      <img
+                        src={coverImage}
+                        alt={prop.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+                        <span className="rounded-full border border-white/30 bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#047857]">
                           Accredited
                         </span>
+                        {isNsfas && (
+                          <span className="rounded-full bg-[#047857] px-2.5 py-1 text-[10px] font-bold text-white">
+                            NSFAS
+                          </span>
+                        )}
+                      </div>
+                      <div className="absolute right-3 top-3">
                         <FavoriteButton propertyId={prop.id} initialSaved={true} />
                       </div>
-                      <div>
-                        <p className="text-[11px] font-semibold text-indigo-100">
-                          {prop.suburb}, {prop.city}
-                        </p>
-                        <h3 className="text-lg font-bold tracking-tight truncate">{prop.title}</h3>
-                      </div>
+                      {photoCount > 0 && (
+                        <span className="absolute bottom-3 right-3 rounded-full bg-[#0F172A]/70 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                          {photoCount} {photoCount === 1 ? "photo" : "photos"}
+                        </span>
+                      )}
                     </div>
 
+                    {thumbnails.length > 0 && (
+                      <div className="grid grid-cols-3 gap-1 bg-white px-1 pt-1">
+                        {thumbnails.map((src, i) => (
+                          <img
+                            key={i}
+                            src={src}
+                            alt={`${prop.title} photo ${i + 2}`}
+                            className="h-14 w-full rounded-lg object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-1 flex-col p-4">
-                      <p className="text-xs text-[#64748B]">
+                      <h3 className="font-bold text-[#0F172A]">{prop.title}</h3>
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-[#64748B]">
+                        <LuMapPin className="h-3 w-3 shrink-0 text-[#059669]" />
                         {prop.address}, {prop.suburb}, {prop.city}
                       </p>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div className="rounded-xl bg-[#F8FAFC] p-2.5">
-                          <p className="text-[#94A3B8] text-[10px]">Monthly rent</p>
+                      {prop.description && (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#64748B]">{prop.description}</p>
+                      )}
+
+                      {publicAmenities.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {publicAmenities.slice(0, 3).map((a) => (
+                            <span
+                              key={a}
+                              className="rounded-full border border-[#E5E7EB] bg-[#F8FAFC] px-2 py-0.5 text-[10px] font-bold text-[#475569]"
+                            >
+                              {a.replace(/_/g, " ")}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs bg-[#F8FAFC] p-3 rounded-xl">
+                        <div>
+                          <p className="text-[10px] text-[#94A3B8]">Monthly rent</p>
                           <p className="mt-0.5 font-bold text-[#0F172A]">
                             R {Number(prop.priceMonthly).toLocaleString("en-ZA")}
                           </p>
                         </div>
-                        <div className="rounded-xl bg-[#F8FAFC] p-2.5">
-                          <p className="text-[#94A3B8] text-[10px]">Safety score</p>
-                          <p className="mt-0.5 font-bold text-emerald-700">
-                            {prop.safetyScore ? `${Number(prop.safetyScore).toFixed(1)} / 10` : "Verified"}
+                        <div>
+                          <p className="text-[10px] text-[#94A3B8]">Safety score</p>
+                          <p className="mt-0.5 flex items-center gap-1 font-bold text-emerald-700">
+                            <LuShieldCheck className="h-3 w-3" />
+                            {prop.safetyScore ? `${Number(prop.safetyScore).toFixed(1)}` : "Verified"}
                           </p>
                         </div>
+                        <div>
+                          <p className="text-[10px] text-[#94A3B8]">Bedrooms</p>
+                          <p className="mt-0.5 font-bold text-[#0F172A]">{prop.bedrooms}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[#94A3B8]">Bathrooms</p>
+                          <p className="mt-0.5 font-bold text-[#0F172A]">{prop.bathrooms ?? "—"}</p>
+                        </div>
+                        {prop.distanceToCampus ? (
+                          <div>
+                            <p className="text-[10px] text-[#94A3B8]">Distance to campus</p>
+                            <p className="mt-0.5 font-bold text-[#0F172A]">
+                              {Number(prop.distanceToCampus).toFixed(1)} km
+                            </p>
+                          </div>
+                        ) : null}
+                        {prop.maxOccupants && (
+                          <div>
+                            <p className="text-[10px] text-[#94A3B8]">Max occupants</p>
+                            <p className="mt-0.5 font-bold text-[#0F172A]">{prop.maxOccupants}</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-3 flex items-center justify-between border-t border-[#F1F5F9] pt-3 text-xs">
