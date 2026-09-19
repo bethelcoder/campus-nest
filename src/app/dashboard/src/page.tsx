@@ -24,6 +24,7 @@ export default async function SrcDashboardPage() {
       },
     }),
     prisma.safetyReport.findMany({
+      where: { status: "ESCALATED" },
       orderBy: { createdAt: "desc" },
       include: {
         reporter: {

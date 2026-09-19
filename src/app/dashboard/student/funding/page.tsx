@@ -86,7 +86,7 @@ function SectionCard({
     <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] md:p-6">
       <div className="mb-5 flex items-start justify-between gap-4 border-b border-[#F1F5F9] pb-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7C3AED]">{eyebrow}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#059669]">{eyebrow}</p>
           <h2 className="mt-1 text-lg font-bold tracking-tight text-[#0F172A]">{title}</h2>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default async function StudentFundingPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">Funding profile</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">Funding profile</p>
             <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl">Funding &amp; Bursary</h1>
             <p className="max-w-2xl text-sm leading-6 text-[#64748B]">
               Review the student information and funder details used for accommodation verification and confirmation letters.
@@ -175,9 +175,9 @@ export default async function StudentFundingPage() {
           </SectionCard>
 
           <SectionCard eyebrow="Funding status" title="Current support">
-            <div className="rounded-xl bg-[#F5F3FF] p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#7C3AED]">Funding scheme</p>
-              <p className="mt-1 text-2xl font-bold text-[#312E81]">{data.fundingType}</p>
+            <div className="rounded-xl bg-[#ECFDF5] p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#059669]">Funding scheme</p>
+              <p className="mt-1 text-2xl font-bold text-[#047857]">{data.fundingType}</p>
             </div>
             <dl className="mt-5 grid gap-5">
               <Detail label="Monthly allowance" value={currency(data.monthlyAllowance)} />

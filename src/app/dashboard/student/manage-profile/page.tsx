@@ -79,7 +79,7 @@ export default async function ManageStudentProfilePage() {
     >
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">Account settings</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">Account settings</p>
           <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl">Manage Profile</h1>
           <p className="max-w-2xl text-sm leading-6 text-[#64748B]">Update the personal, university, address, and emergency contact details used across your CampusNest profile.</p>
         </div>

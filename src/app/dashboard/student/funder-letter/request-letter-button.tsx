@@ -48,7 +48,7 @@ export default function RequestLetterButton({
         </p>
       )}
       {reference && (
-        <a href={`/funder-letters/${reference}`} className="text-[11px] font-bold text-[#7C3AED] hover:underline">
+        <a href={`/funder-letters/${reference}`} className="text-[11px] font-bold text-[#059669] hover:underline">
           Open verification letter
         </a>
       )}

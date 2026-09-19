@@ -52,14 +52,14 @@ export default async function StudentMaintenancePage() {
     <B2cStudentLayout activeTab="Repairs and Maintenance" user={user}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">Resident support</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">Resident support</p>
           <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl">Repairs and Maintenance</h1>
           <p className="max-w-3xl text-sm leading-6 text-[#64748B]">
             Report a repair or maintenance issue at a residence where you currently live. Your report is connected to the residence and sent to its landlord.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm leading-6 text-blue-950">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-6 text-emerald-950">
           Only active tenancies are shown here. This keeps reports tied to the correct residence and landlord and gives each issue a trackable reference.
         </div>
 
@@ -87,15 +87,30 @@ export default async function StudentMaintenancePage() {
                   <div className="mt-6 border-t border-[#F1F5F9] pt-5">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Your recent reports</h3>
                     <div className="mt-3 divide-y divide-[#F1F5F9]">
-                      {tenancy.property.reports.map((report) => (
-                        <div key={report.id} className={`flex flex-col justify-between gap-3 rounded-xl border p-3 sm:flex-row sm:items-center ${report.status === "UNDER_INTERVENTION" || report.status === "ESCALATED" ? "border-red-300 bg-red-50" : "border-transparent"}`}>
-                          <div><p className={`text-sm font-semibold ${report.status === "UNDER_INTERVENTION" || report.status === "ESCALATED" ? "text-red-900" : "text-[#0F172A]"}`}>{report.subject}</p><p className="text-xs text-[#64748B]">{report.category || "General"} · {new Date(report.createdAt).toLocaleDateString("en-ZA")}</p></div>
-                          <div className="flex items-center gap-3">
-                            <span className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${report.status === "UNDER_INTERVENTION" || report.status === "ESCALATED" ? "bg-red-600 text-white" : "bg-[#F1F5F9] text-[#475569]"}`}>{report.status.replace("_", " ")}</span>
-                            {report.status !== "RESOLVED" && report.status !== "UNDER_INTERVENTION" && report.status !== "ESCALATED" && <EscalateReportButton reportId={report.id} />}
+                      {tenancy.property.reports.map((report) => {
+                        const isSrcManaged = report.status === "UNDER_INTERVENTION" || report.status === "ESCALATED";
+                        return (
+                          <div key={report.id} className={`flex flex-col justify-between gap-3 rounded-xl border p-3 sm:flex-row sm:items-center ${isSrcManaged ? "border-red-300 bg-red-50" : "border-transparent"}`}>
+                            <div className="space-y-2">
+                              <p className={`text-sm font-semibold ${isSrcManaged ? "text-red-900" : "text-[#0F172A]"}`}>{report.subject}</p>
+                              <p className="text-xs text-[#64748B]">{report.category || "General"} · Reported {new Date(report.createdAt).toLocaleDateString("en-ZA")}</p>
+                              {report.actionNotes && (
+                                <div className="w-fit rounded-lg border border-red-200 bg-white/70 px-3 py-2">
+                                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-red-600">SRC update</p>
+                                  <p className="text-xs leading-5 text-[#475569]">{report.actionNotes}</p>
+                                </div>
+                              )}
+                              {report.status === "RESOLVED" && report.resolvedAt && (
+                                <p className="text-[11px] font-semibold text-emerald-700">Closed on {new Date(report.resolvedAt).toLocaleDateString("en-ZA")}</p>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 items-center gap-3">
+                              <span className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${isSrcManaged ? "bg-red-600 text-white" : "bg-[#F1F5F9] text-[#475569]"}`}>{report.status.replace("_", " ")}</span>
+                              {report.status !== "RESOLVED" && report.status !== "UNDER_INTERVENTION" && report.status !== "ESCALATED" && <EscalateReportButton reportId={report.id} />}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

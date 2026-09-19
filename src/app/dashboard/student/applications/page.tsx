@@ -57,7 +57,7 @@ export default async function StudentApplicationsPage() {
         {/* Page Title Header */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">
               Housing Application Tracker
             </p>
             <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl">
@@ -69,7 +69,7 @@ export default async function StudentApplicationsPage() {
           </div>
           <Link
             href="/properties"
-            className="inline-flex items-center justify-center rounded-xl bg-[#7C3AED] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#6D28D9]"
+            className="inline-flex items-center justify-center rounded-xl bg-[#059669] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-[#047857]"
           >
             Browse Accredited Residences &rarr;
           </Link>
@@ -77,7 +77,7 @@ export default async function StudentApplicationsPage() {
 
         {applications.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-12 text-center space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EDE9FE] text-[#7C3AED]">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D1FAE5] text-[#059669]">
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -90,7 +90,7 @@ export default async function StudentApplicationsPage() {
             </div>
             <Link
               href="/properties"
-              className="inline-flex items-center justify-center rounded-xl bg-[#7C3AED] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#6D28D9]"
+              className="inline-flex items-center justify-center rounded-xl bg-[#059669] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#047857]"
             >
               Explore Residences
             </Link>
@@ -145,7 +145,7 @@ export default async function StudentApplicationsPage() {
                       {/* Header row with Title & Status */}
                       <div className="flex items-start justify-between gap-3 border-b border-[#F1F5F9] pb-4">
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#059669]">
                             Accredited Residence
                           </span>
                           <h2 className="text-lg font-bold text-[#0F172A] leading-tight">
@@ -200,7 +200,7 @@ export default async function StudentApplicationsPage() {
                     <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[#F1F5F9] pt-4">
                       <Link
                         href={`/properties/${prop.id}`}
-                        className="text-xs font-bold text-[#334155] hover:text-[#7C3AED] transition-colors"
+                        className="text-xs font-bold text-[#334155] hover:text-[#059669] transition-colors"
                       >
                         View Residence Details &rarr;
                       </Link>
@@ -208,7 +208,7 @@ export default async function StudentApplicationsPage() {
                       <Link
                         href={`/applications/proof/${app.id}`}
                         target="_blank"
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#7C3AED] px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-[#6D28D9]"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#059669] px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-[#047857]"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

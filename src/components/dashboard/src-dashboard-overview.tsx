@@ -59,7 +59,7 @@ interface SrcDashboardOverviewProps {
   };
 }
 
-type FilterStatus = "ALL" | "ESCALATED" | "UNDER_INTERVENTION" | "RESOLVED";
+type FilterStatus = "ALL" |"UNDER_INTERVENTION" | "RESOLVED";
 type FilterSeverity = "ALL" | "CRITICAL_EMERGENCY" | "HIGH" | "MEDIUM" | "LOW";
 
 export default function SrcDashboardOverview({
@@ -247,6 +247,7 @@ export default function SrcDashboardOverview({
           {filteredReports.map((report) => {
             const isCritical = report.severity === "CRITICAL_EMERGENCY";
             const isIntervention = report.status === "UNDER_INTERVENTION";
+            const isEscalated = report.status === "ESCALATED";
             const isResolved = report.status === "RESOLVED";
 
             return (
@@ -279,6 +280,8 @@ export default function SrcDashboardOverview({
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                         isResolved
                           ? "bg-emerald-100 text-emerald-800"
+                          : isEscalated
+                          ? "bg-red-600 text-white"
                           : isIntervention
                           ? "bg-amber-100 text-amber-800"
                           : "bg-indigo-100 text-indigo-800"

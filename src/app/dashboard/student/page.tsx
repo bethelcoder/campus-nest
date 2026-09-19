@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getRoleDashboardPath } from "@/lib/rbac";
 import B2cStudentLayout from "@/components/dashboard/b2c-student-layout";
-import StudentSetupActionGrid from "@/components/dashboard/student-setup-action-grid";
 import FavoriteButton from "@/app/properties/favorite-button";
 import ApplyButton from "@/app/properties/apply-button";
 
@@ -115,30 +114,7 @@ export default async function StudentDashboardPage() {
     }
   }
 
-  const dbVerified = await prisma.property.findMany({
-    where: { status: "VERIFIED" },
-    take: 5,
-    orderBy: [{ safetyScore: "desc" }, { createdAt: "desc" }],
-    include: {
-      landlord: { include: { landlordProfile: true } },
-      favorites: session?.sub ? { where: { studentId: session.sub }, select: { id: true } } : false,
-    },
-  });
-
-  const residencesQueue = dbVerified.map((p) => {
-    const provider = p.landlord.landlordProfile?.companyName || `${p.landlord.name} ${p.landlord.surname}`;
-    const isSaved = Array.isArray(p.favorites) && p.favorites.length > 0;
-    return {
-      id: p.id,
-      name: p.title,
-      suburb: `${p.suburb}, ${p.city}`,
-      distance: p.distanceToCampus ? `${p.distanceToCampus} km to campus` : undefined,
-      rate: `R ${Number(p.priceMonthly).toLocaleString("en-ZA")}/mo`,
-      safetyScore: p.safetyScore ? `${Number(p.safetyScore).toFixed(1)}/10` : "Verified",
-      landlord: provider,
-      isSaved,
-    };
-  });
+  const appliedPropertyIds = new Set(applications.map((a) => a.property.id));
 
   return (
     <B2cStudentLayout
@@ -160,7 +136,35 @@ export default async function StudentDashboardPage() {
           </p>
         </div>
 
-        <StudentSetupActionGrid user={user} residences={residencesQueue} />
+        <div className="overflow-hidden rounded-2xl border border-[#F3E8FF] bg-gradient-to-br from-[#F5F3FF] via-white to-[#ECFEFF] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.05)] md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#7C3AED]">Why CampusNest</p>
+              <h2 className="text-xl font-bold tracking-tight text-[#0F172A] md:text-2xl">
+                The right home makes all the difference.
+              </h2>
+              <p className="text-sm leading-relaxed text-[#475569] md:text-base">
+                Studying is hard enough — where you rest shouldn&apos;t be. That&apos;s why every residence on
+                CampusNest is verified <strong className="text-[#0F172A]">safe</strong>, within <strong className="text-[#0F172A]">walking distance</strong> of
+                campus, and priced with a <strong className="text-[#0F172A]">student budget</strong> in mind.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+                <p className="text-xl font-black text-emerald-700">Safe</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Verified</p>
+              </div>
+              <div className="rounded-xl border border-indigo-200 bg-emerald-50 px-4 py-3 text-center">
+                <p className="text-xl font-black text-emerald-700">Close</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">To Campus</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-emerald-50 px-4 py-3 text-center">
+                <p className="text-xl font-black text-emerald-700">Affordable</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Student Budget</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* My Applications Quick Tracker */}
         <section id="applications" className="space-y-4 scroll-mt-6">
@@ -327,7 +331,7 @@ export default async function StudentDashboardPage() {
                         >
                           View Details
                         </Link>
-                        <ApplyButton propertyId={prop.id} />
+                        <ApplyButton propertyId={prop.id} hasApplied={appliedPropertyIds.has(prop.id)} />
                       </div>
                     </div>
                   </article>

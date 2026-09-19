@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   const reports = await prisma.safetyReport.findMany({
-    where: { status: { in: ["UNDER_INTERVENTION", "ESCALATED"] } },
+    where: { status: "ESCALATED" },
     orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
     include: {
       reporter: { include: { studentProfile: true } },

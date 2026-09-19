@@ -78,7 +78,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
       <button
         type="button"
         onClick={openRooms}
-        className="inline-flex w-full items-center justify-center rounded-xl bg-[#0F172A] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#1E293B] cursor-pointer"
+        className="inline-flex w-full items-center justify-center rounded-xl bg-[#059669] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#047857] cursor-pointer"
       >
         Apply
       </button>
@@ -106,7 +106,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full rounded-xl border border-[#CBD5E1] bg-white p-2.5 text-xs font-semibold text-[#0F172A] outline-none focus:border-[#7C3AED]"
+                  className="w-full rounded-xl border border-[#CBD5E1] bg-white p-2.5 text-xs font-semibold text-[#0F172A] outline-none focus:border-[#059669]"
                 >
                   <option value="10 Months (Feb - Nov Academic Year)">10 Months (Feb - Nov Academic Year)</option>
                   <option value="12 Months (Full Calendar Year Jan - Dec)">12 Months (Full Calendar Year Jan - Dec)</option>
@@ -125,7 +125,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
                     <label
                       key={room.id}
                       className={`block cursor-pointer rounded-xl border p-2.5 transition-colors ${
-                        selected === room.id ? "border-[#7C3AED] bg-[#F5F3FF]" : "border-[#E5E7EB] hover:bg-[#F8FAFC]"
+                        selected === room.id ? "border-[#059669] bg-[#ECFDF5]" : "border-[#E5E7EB] hover:bg-[#F8FAFC]"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
                           value={room.id}
                           checked={selected === room.id}
                           onChange={() => setSelected(room.id)}
-                          className="accent-[#7C3AED]"
+                          className="accent-[#059669]"
                         />
                         <span className="text-xs font-bold text-[#0F172A]">
                           {room.name} · {room.roomType}
@@ -162,7 +162,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
                 type="button"
                 disabled={state === "loading"}
                 onClick={apply}
-                className="mt-3 w-full rounded-xl bg-[#7C3AED] px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#6D28D9] disabled:bg-[#CBD5E1] cursor-pointer"
+                className="mt-3 w-full rounded-xl bg-[#059669] px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#047857] disabled:bg-[#CBD5E1] cursor-pointer"
               >
                 {state === "loading" ? "Submitting Application..." : "Submit Application"}
               </button>
@@ -175,7 +175,7 @@ export default function ApplyButton({ propertyId, hasApplied = false }: ApplyBut
               <p className="text-xs font-bold text-[#0F172A]">{message}</p>
               <Link
                 href="/dashboard/student/applications"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#7C3AED] px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#6D28D9]"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-[#059669] px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#047857]"
               >
                 View in My Applications &rarr;
               </Link>
