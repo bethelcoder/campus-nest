@@ -87,13 +87,16 @@ export default function GoogleMapWrapper({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
 
-  // Sync center when props change
+  // Sync center & zoom when props change
   useEffect(() => {
     setFbCenter(center);
     if (mapInstanceRef.current && window.google?.maps) {
       mapInstanceRef.current.panTo(center);
+      if (zoom) {
+        mapInstanceRef.current.setZoom(zoom);
+      }
     }
-  }, [center.lat, center.lng]);
+  }, [center.lat, center.lng, zoom]);
 
   // Load Google Maps API script
   useEffect(() => {
@@ -111,32 +114,36 @@ export default function GoogleMapWrapper({
 
   // Initialize real Google Map
   useEffect(() => {
-    if (!isGoogleLoaded || !containerRef.current || !window.google?.maps) return;
+    if (!isGoogleLoaded || !containerRef.current || typeof window.google?.maps?.Map !== "function") return;
 
-    if (!mapInstanceRef.current) {
-      const map = new window.google.maps.Map(containerRef.current, {
-        center,
-        zoom,
-        styles: GOOGLE_MAP_STYLES,
-        disableDefaultUI: false,
-        zoomControl: showControls,
-        mapTypeControl: false,
-        scaleControl: true,
-        streetViewControl: true,
-        rotateControl: false,
-        fullscreenControl: true,
-      });
+    try {
+      if (!mapInstanceRef.current) {
+        const map = new window.google.maps.Map(containerRef.current, {
+          center,
+          zoom,
+          styles: GOOGLE_MAP_STYLES,
+          disableDefaultUI: false,
+          zoomControl: showControls,
+          mapTypeControl: false,
+          scaleControl: true,
+          streetViewControl: true,
+          rotateControl: false,
+          fullscreenControl: true,
+        });
 
-      map.addListener("click", (e: any) => {
-        if (onMapClick && e.latLng) {
-          onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-        }
-      });
+        map.addListener("click", (e: any) => {
+          if (onMapClick && e.latLng) {
+            onMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+          }
+        });
 
-      mapInstanceRef.current = map;
-    } else {
-      mapInstanceRef.current.setCenter(center);
-      mapInstanceRef.current.setZoom(zoom);
+        mapInstanceRef.current = map;
+      } else {
+        mapInstanceRef.current.setCenter(center);
+        mapInstanceRef.current.setZoom(zoom);
+      }
+    } catch (err) {
+      console.warn("Failed to initialize Google Map instance:", err);
     }
   }, [isGoogleLoaded, showControls]);
 

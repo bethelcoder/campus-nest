@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LuMapPin, LuNavigation } from "react-icons/lu";
 import { loadGoogleMapsApi } from "@/lib/maps/google-maps-loader";
+import GoogleMapWrapper from "./google-map-wrapper";
 
 export interface MapLocation {
   latitude: number;
@@ -74,7 +75,7 @@ export default function GoogleMap({
         if (!loaded) throw new Error("Google Maps API key is not configured");
         if (cancelled || !mapElementRef.current) return;
         const maps = (window as GoogleMapsWindow).google?.maps;
-        if (!maps) throw new Error("Google Maps is unavailable");
+        if (!maps || typeof maps.Map !== "function") throw new Error("Google Maps is unavailable");
 
         const initial = location || { latitude: -26.2041, longitude: 28.0473 };
         const center = { lat: initial.latitude, lng: initial.longitude };
@@ -131,13 +132,24 @@ export default function GoogleMap({
   }, [address, interactive, location]);
 
   if (error) {
+    const lat = location?.latitude ?? -26.1925;
+    const lng = location?.longitude ?? 28.0347;
     return (
-      <div className={`${className} flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center`}>
-        <div>
-          <LuMapPin className="mx-auto h-7 w-7 text-[#005F56]" />
-          <p className="mt-2 text-sm font-semibold text-slate-700">Location map setup pending</p>
-          <p className="mt-1 text-xs text-slate-500">Add the Google Maps browser key to enable the interactive map.</p>
-        </div>
+      <div className={className}>
+        <GoogleMapWrapper
+          center={{ lat, lng }}
+          zoom={15}
+          markers={[
+            {
+              id: "res-detail-pin",
+              lat,
+              lng,
+              title: formatAddress(address),
+              iconType: "residence",
+            },
+          ]}
+          height="100%"
+        />
       </div>
     );
   }

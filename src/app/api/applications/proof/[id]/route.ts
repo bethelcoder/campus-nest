@@ -56,7 +56,7 @@ export async function GET(
   const room = application.roomListing;
 
   const providerName =
-    landlordProfile?.companyName || `${landlord.name} ${landlord.surname}` | "";
+    landlordProfile?.companyName || `${landlord.name} ${landlord.surname}` || "";
 
   const addressCity = `${property.address}, ${property.suburb}, ${property.city}`;
   const addressNoCity = `${property.address}, ${property.suburb}`;

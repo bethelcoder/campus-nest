@@ -125,3 +125,122 @@ export async function generateConfirmationLetterPdf(
 ): Promise<Buffer> {
   return renderToBuffer(<ConfirmationLetterDoc data={data} />);
 }
+
+export interface ApplicationProofLetterData {
+  referenceCode: string;
+  statusText: string;
+  submittedDate: string;
+  studentName: string;
+  studentNumber: string;
+  university: string;
+  funderName: string;
+  studentEmail: string;
+  idNumber: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  providerName: string;
+  entityType?: string;
+  safetyScore: number | null;
+  landlordEmail: string;
+  room?: { name: string; roomType: string };
+  rentAmount: number;
+  note: string;
+  issuedDate: string;
+}
+
+function ApplicationProofLetterDoc({ data }: { data: ApplicationProofLetterData }) {
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Proof of Student Residence Application</Text>
+          <Text style={styles.subtitle}>Reference: {data.referenceCode}</Text>
+          <Text style={styles.subtitle}>Issued Date: {data.issuedDate}</Text>
+          <Text style={styles.subtitle}>Application Status: {data.statusText}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Student Information</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Student Name</Text>
+            <Text style={styles.value}>{data.studentName}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Student Number</Text>
+            <Text style={styles.value}>{data.studentNumber}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Institution</Text>
+            <Text style={styles.value}>{data.university}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Funding / Bursary</Text>
+            <Text style={styles.value}>{data.funderName}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>University Email</Text>
+            <Text style={styles.value}>{data.studentEmail}</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Property & Accommodation Details</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Residence Name</Text>
+            <Text style={styles.value}>{data.propertyTitle}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Physical Address</Text>
+            <Text style={styles.value}>{data.propertyAddress}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Accommodation Provider</Text>
+            <Text style={styles.value}>{data.providerName}</Text>
+          </View>
+          {data.room && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Allocated Room</Text>
+              <Text style={styles.value}>
+                {data.room.name} ({data.room.roomType.replace(/_/g, " ")})
+              </Text>
+            </View>
+          )}
+          <View style={styles.row}>
+            <Text style={styles.label}>Monthly Rental Rate</Text>
+            <Text style={styles.value}>R{data.rentAmount.toLocaleString()} / month</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Safety Rating</Text>
+            <Text style={styles.value}>
+              {data.safetyScore !== null ? `${data.safetyScore} / 10 Verified` : "Compliance in Review"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Submission & Terms Note</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Date Submitted</Text>
+            <Text style={styles.value}>{data.submittedDate}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Terms / Remarks</Text>
+            <Text style={styles.value}>{data.note}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.footer}>
+          This certificate serves as official proof that the aforementioned student has submitted a formal accommodation
+          placement request via CampusNest. This document can be submitted to university housing offices, NSFAS, and financial aid bursary administrators to verify accommodation placement and lease intent. Reference: {data.referenceCode}.
+        </Text>
+      </Page>
+    </Document>
+  );
+}
+
+export async function generateApplicationProofLetterPdf(
+  data: ApplicationProofLetterData
+): Promise<Buffer> {
+  return renderToBuffer(<ApplicationProofLetterDoc data={data} />);
+}
+
