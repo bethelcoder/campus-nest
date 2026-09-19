@@ -38,9 +38,6 @@ export default async function ManageStudentProfilePage() {
     emergencyContactName: profile?.emergencyContactName || "",
     emergencyContactPhone: profile?.emergencyContactPhone || "",
     emergencyContactRelationship: profile?.emergencyContactRelationship || "",
-    emergencyContact2Name: profile?.emergencyContact2Name || "",
-    emergencyContact2Phone: profile?.emergencyContact2Phone || "",
-    emergencyContact2Relationship: profile?.emergencyContact2Relationship || "",
     fundingType: profile?.fundingType || "",
     funderName: profile?.funderName || "",
     funderReference: profile?.funderReference || "",
@@ -52,6 +49,20 @@ export default async function ManageStudentProfilePage() {
     guarantorPhone: profile?.guarantorPhone || "",
     guarantorRelationship: profile?.guarantorRelationship || "",
   };
+
+  const additionalContacts = Array.isArray(profile?.emergencyContacts)
+    ? profile.emergencyContacts.filter(
+        (contact): contact is { name: string; phone: string; relationship: string } =>
+          typeof contact === "object" &&
+          contact !== null &&
+          "name" in contact &&
+          "phone" in contact &&
+          "relationship" in contact &&
+          typeof contact.name === "string" &&
+          typeof contact.phone === "string" &&
+          typeof contact.relationship === "string"
+      )
+    : [];
 
   return (
     <B2cStudentLayout
@@ -73,7 +84,7 @@ export default async function ManageStudentProfilePage() {
           <p className="max-w-2xl text-sm leading-6 text-[#64748B]">Update the personal, university, address, and emergency contact details used across your CampusNest profile.</p>
         </div>
         <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] md:p-7">
-          <ProfileForm initialValues={initialValues} />
+          <ProfileForm initialValues={initialValues} additionalContacts={additionalContacts} />
         </div>
       </div>
     </B2cStudentLayout>

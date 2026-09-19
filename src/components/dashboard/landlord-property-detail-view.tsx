@@ -205,6 +205,50 @@ export default function LandlordPropertyDetailView({
         </div>
       </div>
 
+      {/* Uploaded residence photos */}
+      <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-xs">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Residence Photos</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Uploaded photos for this residence listing.
+            </p>
+          </div>
+          {property.images?.length > 0 && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              {property.images.length} photo{property.images.length === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+
+        {property.images?.length > 0 ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {property.images.map((imageUrl: string, index: number) => (
+              <button
+                key={`${imageUrl}-${index}`}
+                type="button"
+                onClick={() => setSelectedPhoto(imageUrl)}
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-gray-200 bg-gray-100 text-left"
+                aria-label={`View residence photo ${index + 1}`}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`${property.title} photo ${index + 1}`}
+                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white transition-colors group-hover:bg-black/25">
+                  <LuEye className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border-2 border-dashed border-gray-200 p-8 text-center text-xs text-gray-400">
+            No residence photos uploaded yet.
+          </div>
+        )}
+      </section>
+
       {/* Tabs Navigation */}
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs overflow-x-auto no-scrollbar">
         {[

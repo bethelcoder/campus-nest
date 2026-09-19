@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 interface PropertyDetailPageProps {
   params: { id: string };
-  searchParams: { preview?: string };
+  searchParams?: { preview?: string };
 }
 
 export default async function PropertyDetailPage({
@@ -34,7 +34,9 @@ export default async function PropertyDetailPage({
 
   if (!property) notFound();
 
-  const isPreview = searchParams.preview === "true" || (session?.role === "LANDLORD" && session.sub === property.landlordId);
+  const isPreview =
+    searchParams?.preview === "true" ||
+    (session?.role === "LANDLORD" && session?.sub === property.landlordId);
 
   const serializedProperty = JSON.parse(JSON.stringify(property));
 
@@ -46,4 +48,3 @@ export default async function PropertyDetailPage({
     />
   );
 }
-
