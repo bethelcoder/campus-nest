@@ -105,6 +105,7 @@ model User {
   endorsedLetters      ConfirmationLetter[] @relation("EndorsingAdmin")
   funderLetterRequests FunderLetterRequest[]
   reportsFiled        SafetyReport[]        @relation("ReportedBy")
+  notifications       Notification[]       @relation("UserNotifications")
 
   @@index([email])
   @@index([firebaseUid])
@@ -407,4 +408,19 @@ model SafetyReport {
   @@index([status])
   @@index([type])
   @@index([severity])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  recipientId String
+  recipient   User      @relation("UserNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  message     String
+  metadata    Json?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recipientId, createdAt])
+  @@index([recipientId, readAt])
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { STANDARD_CHECKLIST, calculateSafetyScore } from "@/lib/safety";
+import { notifyAdmins } from "@/lib/notifications";
 
 // Public browsing — no auth required, per PRD ("Public browsing without
 // login available for listings"). Only VERIFIED properties are shown to
@@ -156,6 +157,13 @@ export async function POST(req: NextRequest) {
       },
       include: { checklistItems: true },
     });
+
+    await notifyAdmins({
+      type: "PROPERTY_REVIEW_REQUIRED",
+      title: "Residence requires review",
+      message: `${property.title} was submitted by a landlord and requires approval and verification.`,
+      metadata: { propertyId: property.id, landlordId: session.sub },
+    }).catch((err) => console.warn("Admin notification error:", err));
 
     return NextResponse.json({ success: true, property }, { status: 201 });
   } catch (err: any) {

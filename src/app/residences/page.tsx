@@ -22,6 +22,7 @@ const FALLBACK_PROPERTY_IMAGES = [
 
 export default async function PublicResidencesDirectoryPage() {
   const properties = await prisma.property.findMany({
+    where: { status: "VERIFIED" },
     orderBy: { createdAt: "desc" },
     include: {
       landlord: {

@@ -258,8 +258,8 @@ export default function LandlordPropertyDetailView({
           )}
 
           <Link
-            href={`/landlord/tenancies?propertyId=${property.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            href={`/landlord/properties/${property.id}/tenancy`}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <LuUserCheck className="w-3.5 h-3.5" />
             <span>Manage Tenancies ({occupiedBeds})</span>
@@ -409,37 +409,47 @@ export default function LandlordPropertyDetailView({
               </p>
             </div>
 
-            {/* Room Availability Filter Buttons */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 border border-gray-200">
-              <button
-                type="button"
-                onClick={() => setRoomFilter("ALL")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  roomFilter === "ALL" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
-                }`}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Room Availability Filter Buttons */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setRoomFilter("ALL")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    roomFilter === "ALL" ? "bg-white text-gray-900 shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  All Rooms ({rooms.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoomFilter("AVAILABLE")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    roomFilter === "AVAILABLE" ? "bg-emerald-600 text-white shadow-2xs" : "text-emerald-700 hover:text-emerald-800"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>Available Units</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoomFilter("TAKEN")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    roomFilter === "TAKEN" ? "bg-gray-800 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                  <span>Fully Taken</span>
+                </button>
+              </div>
+
+              <Link
+                href={`/landlord/properties/${property.id}/tenancy`}
+                className="text-xs font-bold text-[#005F56] hover:text-[#004d46] flex items-center gap-1"
               >
-                All Rooms ({rooms.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoomFilter("AVAILABLE")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                  roomFilter === "AVAILABLE" ? "bg-emerald-600 text-white shadow-2xs" : "text-emerald-700 hover:text-emerald-800"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span>Available Units</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoomFilter("TAKEN")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                  roomFilter === "TAKEN" ? "bg-gray-800 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
-                <span>Fully Taken</span>
-              </button>
+                <span>Manage Room Allocations</span>
+                <LuArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
 
@@ -842,8 +852,8 @@ export default function LandlordPropertyDetailView({
             </div>
 
             <Link
-              href={`/landlord/tenancies?propertyId=${property.id}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              href={`/landlord/properties/${property.id}/tenancy`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer"
             >
               <LuPlus className="w-3.5 h-3.5" />
               <span>Full Tenancy Manager</span>

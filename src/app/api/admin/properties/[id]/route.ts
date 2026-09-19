@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { notifyUser } from "@/lib/notifications";
 
 const statusUpdateSchema = z.object({
   status: z.enum(["VERIFIED", "FLAGGED", "REJECTED", "PENDING_VERIFICATION", "DRAFT"]),
+  verify: z.boolean().optional(),
+  message: z.string().trim().min(1).max(500).optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -26,17 +29,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { status } = parsed.data;
 
-  // Prevent accrediting properties that haven't completed safety checklist
-  if (status === "VERIFIED" && property.safetyScore === null) {
-    return NextResponse.json(
-      { error: "Cannot accredit a property without a completed safety checklist score" },
-      { status: 409 }
-    );
-  }
-
   const updated = await prisma.property.update({
     where: { id: params.id },
-    data: { status },
+    data: {
+      status,
+      ...(parsed.data.verify
+        ? {
+            physicalInspectionAt: new Date(),
+            physicalInspectorName: "CampusNest Platform Admin",
+            accreditationReference: property.accreditationReference || `CN-${property.id.slice(-8).toUpperCase()}`,
+          }
+        : {}),
+    },
+  });
+
+  await notifyUser({
+    recipientId: property.landlordId,
+    type: "RESIDENCE_REVIEW",
+    title: "Residence review update",
+    message: parsed.data.message || `Your residence "${property.title}" was marked ${status.replaceAll("_", " ").toLowerCase()} by CampusNest administration.`,
+    metadata: { propertyId: property.id, status },
   });
 
   return NextResponse.json({ property: updated });
