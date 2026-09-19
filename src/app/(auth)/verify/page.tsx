@@ -11,6 +11,8 @@ function VerifyForm() {
   const email = searchParams.get("email") ?? "";
   const role = searchParams.get("role") ?? "STUDENT";
 
+  const next = searchParams.get("next");
+
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -99,15 +101,16 @@ function VerifyForm() {
       }
 
       // Success: redirect to target destination
-      const destination = data.targetUrl || (
-        role === "SRC_REPRESENTATIVE"
+      const destination =
+        next ||
+        data.targetUrl ||
+        (role === "SRC_REPRESENTATIVE"
           ? "/dashboard/src"
           : role === "ADMIN"
           ? "/dashboard/admin"
           : role === "LANDLORD"
           ? "/landlord/onboarding"
-          : "/onboarding"
-      );
+          : "/onboarding");
       window.location.href = destination;
     } catch {
       setError("Network error. Please try again.");

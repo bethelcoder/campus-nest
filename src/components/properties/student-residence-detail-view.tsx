@@ -60,12 +60,32 @@ interface StudentResidenceDetailViewProps {
     email?: string;
     role?: string;
   } | null;
+  studentProfile?: {
+    name: string;
+    surname: string;
+    email: string;
+    phone?: string;
+    universityEmail?: string;
+    studentNumber?: string;
+    universityName?: string;
+    degreeProgram?: string;
+    fundingType?: string;
+    funderName?: string;
+    monthlyAllowance?: number;
+  } | null;
+  autoApply?: boolean;
+  initialRoomId?: string | null;
+  slug?: string;
   isPreview?: boolean;
 }
 
 export default function StudentResidenceDetailView({
   property,
   user,
+  studentProfile,
+  autoApply = false,
+  initialRoomId = null,
+  slug,
   isPreview = false,
 }: StudentResidenceDetailViewProps) {
   // Image Gallery State - formatted with proxy support for private blobs
@@ -87,11 +107,38 @@ export default function StudentResidenceDetailView({
 
   // Application Modal & Viewing Tour State
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(initialRoomId || null);
   const [selectedIntake, setSelectedIntake] = useState("Semester 1 (Immediate)");
   const [tourDate, setTourDate] = useState("2026-09-24");
   const [tourTime, setTourTime] = useState("12:30 PM");
   const [tourScheduled, setTourScheduled] = useState(false);
+
+  // Auto apply trigger when returned from auth
+  React.useEffect(() => {
+    if (autoApply) {
+      if (initialRoomId) {
+        setSelectedRoomId(initialRoomId);
+      }
+      if (user) {
+        setShowApplyModal(true);
+      } else {
+        setShowAuthModal(true);
+      }
+    }
+  }, [autoApply, initialRoomId, user]);
+
+  // Handle application click with auth checking
+  const handleApplyClick = (roomId?: string) => {
+    if (roomId) {
+      setSelectedRoomId(roomId);
+    }
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    setShowApplyModal(true);
+  };
 
   // Parsed Room Configurations
   const rooms: ParsedRoom[] = useMemo(() => {
@@ -511,10 +558,7 @@ export default function StudentResidenceDetailView({
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setSelectedRoomId(room.id);
-                            setShowApplyModal(true);
-                          }}
+                          onClick={() => handleApplyClick(room.id)}
                           className="px-4 py-2 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
                         >
                           Apply for Room
@@ -717,7 +761,7 @@ export default function StudentResidenceDetailView({
               <div className="space-y-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowApplyModal(true)}
+                  onClick={() => handleApplyClick()}
                   className="w-full py-3 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LuSparkles className="w-4 h-4" />
@@ -826,14 +870,108 @@ export default function StudentResidenceDetailView({
         </div>
       )}
 
+      {/* Student Authentication Gate Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-br from-[#005F56] to-[#00453e] text-white relative">
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <LuX className="w-4 h-4" />
+              </button>
+              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
+                <LuGraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                Student Account Required
+              </h3>
+              <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
+                Sign in or register to submit your formal application for <strong>{property.title}</strong> and unlock instant bursar &amp; NSFAS proof letters.
+              </p>
+            </div>
+
+            {/* Modal Body & Benefits */}
+            <div className="p-6 space-y-5">
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-[#005F56] flex items-center justify-center shrink-0 mt-0.5">
+                    <LuCheck className="w-3 h-3 font-bold" />
+                  </div>
+                  <span><strong>Automatic KYC Auto-Fill:</strong> Validates student number, degree &amp; funding status.</span>
+                </div>
+                <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-[#005F56] flex items-center justify-center shrink-0 mt-0.5">
+                    <LuCheck className="w-3 h-3 font-bold" />
+                  </div>
+                  <span><strong>Digital Placement Letter:</strong> Formal signed PDF for NSFAS / Bursars upon landlord review.</span>
+                </div>
+                <div className="flex items-start gap-2.5 text-xs text-slate-700">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-[#005F56] flex items-center justify-center shrink-0 mt-0.5">
+                    <LuCheck className="w-3 h-3 font-bold" />
+                  </div>
+                  <span><strong>Seamless Return:</strong> You will be returned right back here to complete your application.</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2.5 pt-2">
+                {(() => {
+                  const propertySlug = slug || property.slug || property.id;
+                  const returnUrl = `/residences/${propertySlug}?apply=true${selectedRoomId ? `&roomId=${selectedRoomId}` : ""}`;
+                  const loginUrl = `/login?next=${encodeURIComponent(returnUrl)}`;
+                  const registerUrl = `/register?next=${encodeURIComponent(returnUrl)}`;
+
+                  return (
+                    <>
+                      <Link
+                        href={loginUrl}
+                        className="w-full py-3 px-4 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs"
+                      >
+                        <LuGraduationCap className="w-4 h-4" />
+                        <span>Sign In with Student Account</span>
+                        <LuChevronRight className="w-4 h-4 ml-auto" />
+                      </Link>
+
+                      <Link
+                        href={registerUrl}
+                        className="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-[#005F56] bg-white text-slate-800 hover:text-[#005F56] text-xs font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <LuPlus className="w-4 h-4" />
+                        <span>Create Free Student Account</span>
+                        <LuChevronRight className="w-4 h-4 ml-auto" />
+                      </Link>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(false)}
+                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  Continue browsing residence details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Student Application Modal */}
       {showApplyModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden my-8">
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden my-8 border border-slate-200">
             <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Student Accommodation Application
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <LuSparkles className="w-4 h-4 text-[#005F56]" />
+                  <span>Student Accommodation Application</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Apply for {property.title} • {selectedIntake}
@@ -852,10 +990,25 @@ export default function StudentResidenceDetailView({
               <DynamicApplicationForm
                 propertyId={property.id}
                 propertyTitle={property.title}
-                monthlyRent={startingPrice}
+                monthlyRent={
+                  selectedRoomId
+                    ? rooms.find((r) => r.id === selectedRoomId)?.monthlyPrice || startingPrice
+                    : startingPrice
+                }
                 landlordName={landlordName}
+                rooms={rooms.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  typeName: r.typeName,
+                  monthlyPrice: r.monthlyPrice,
+                  deposit: r.deposit,
+                }))}
+                selectedRoomId={selectedRoomId}
+                onRoomChange={(rId) => setSelectedRoomId(rId)}
+                selectedIntake={selectedIntake}
+                initialStudent={studentProfile}
                 onSubmitSuccess={() => {
-                  setTimeout(() => setShowApplyModal(false), 2000);
+                  // Keep open so student can see success state & download letter
                 }}
               />
             </div>

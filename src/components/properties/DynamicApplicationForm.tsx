@@ -1,19 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
-  FileText,
-  User,
-  GraduationCap,
-  ShieldCheck,
-  PlusCircle,
-  CheckCircle2,
-  AlertCircle,
-  FileSpreadsheet,
-  HeartPulse,
-  Send,
-  Sparkles,
-} from "lucide-react";
+  LuFileText,
+  LuUser,
+  LuGraduationCap,
+  LuShieldCheck,
+  LuPlus,
+  LuCheck,
+  LuInfo,
+  LuFileSpreadsheet,
+  LuHeartPulse,
+  LuSend,
+  LuSparkles,
+  LuBed,
+  LuDownload,
+  LuArrowRight,
+  LuCalendar,
+} from "react-icons/lu";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
@@ -47,8 +52,18 @@ export interface DynamicApplicationFormProps {
   propertyTitle: string;
   monthlyRent: number;
   landlordName: string;
+  rooms?: Array<{
+    id: string;
+    name: string;
+    typeName: string;
+    monthlyPrice: number;
+    deposit: number;
+  }>;
+  selectedRoomId?: string | null;
+  onRoomChange?: (roomId: string) => void;
+  selectedIntake?: string;
   customRequirements?: LandlordCustomRequirement[];
-  initialStudent?: StudentBaseProfile;
+  initialStudent?: StudentBaseProfile | null;
   onSubmitSuccess?: (applicationId: string) => void;
 }
 
@@ -57,6 +72,10 @@ export function DynamicApplicationForm({
   propertyTitle,
   monthlyRent,
   landlordName,
+  rooms = [],
+  selectedRoomId: initialSelectedRoomId,
+  onRoomChange,
+  selectedIntake = "Semester 1 (Immediate)",
   customRequirements = [
     {
       id: "medical_disclosure",
@@ -81,33 +100,48 @@ export function DynamicApplicationForm({
       options: ["No Preference / Mixed", "Strictly Halaal", "Strictly Kosher", "Vegetarian / Vegan"],
     },
   ],
-  initialStudent = {
-    name: "Lerato",
-    surname: "Nkosi",
+  initialStudent,
+  onSubmitSuccess,
+}: DynamicApplicationFormProps) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedAppId, setSubmittedAppId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [activeRoomId, setActiveRoomId] = useState<string>(
+    initialSelectedRoomId || (rooms.length > 0 ? rooms[0].id : "")
+  );
+  const [intakeDuration, setIntakeDuration] = useState(selectedIntake);
+
+  // Dynamic responses state
+  const [dynamicAnswers, setDynamicAnswers] = useState<Record<string, string | boolean>>({});
+  const [studentMessage, setStudentMessage] = useState("");
+
+  const activeRoomObj = rooms.find((r) => r.id === activeRoomId);
+  const displayRent = activeRoomObj ? activeRoomObj.monthlyPrice : monthlyRent;
+
+  const studentData: StudentBaseProfile = initialStudent || {
+    name: "Student",
+    surname: "Applicant",
     email: "student@example.com",
-    universityEmail: "lerato.nkosi@wits.ac.za",
+    universityEmail: "student@university.ac.za",
     studentNumber: "2489102",
     universityName: "University of the Witwatersrand (Wits)",
     degreeProgram: "BSc Computer Science",
     fundingType: "NSFAS",
     funderName: "NSFAS Direct Allowance",
     monthlyAllowance: 4800,
-  },
-  onSubmitSuccess,
-}: DynamicApplicationFormProps) {
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Dynamic responses state
-  const [dynamicAnswers, setDynamicAnswers] = useState<Record<string, string | boolean>>({});
-  const [studentMessage, setStudentMessage] = useState("");
+  };
 
   const handleDynamicChange = (id: string, value: string | boolean) => {
     setDynamicAnswers((prev) => ({
       ...prev,
       [id]: value,
     }));
+  };
+
+  const handleRoomSelect = (roomId: string) => {
+    setActiveRoomId(roomId);
+    if (onRoomChange) onRoomChange(roomId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,6 +155,8 @@ export function DynamicApplicationForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           propertyId,
+          roomListingId: activeRoomId || undefined,
+          duration: intakeDuration,
           message: studentMessage,
           customAddendaResponses: dynamicAnswers,
         }),
@@ -132,8 +168,9 @@ export function DynamicApplicationForm({
       }
 
       const result = await response.json();
-      setSubmitted(true);
-      if (onSubmitSuccess) onSubmitSuccess(result.application?.id || "app_success");
+      const appId = result.application?.id || "app_success";
+      setSubmittedAppId(appId);
+      if (onSubmitSuccess) onSubmitSuccess(appId);
     } catch (err: any) {
       setErrorMessage(err.message || "An error occurred while submitting.");
     } finally {
@@ -141,110 +178,178 @@ export function DynamicApplicationForm({
     }
   };
 
-  if (submitted) {
+  if (submittedAppId) {
     return (
-      <Card variant="elevated" className="p-8 text-center space-y-4 bg-emerald-50/50 dark:bg-emerald-950/20 border-2 border-emerald-500/30">
-        <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-          <CheckCircle2 className="w-8 h-8" />
+      <Card variant="elevated" className="p-8 text-center space-y-5 bg-emerald-50/50 border-2 border-emerald-500/30">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+          <LuCheck className="w-8 h-8 font-bold" />
         </div>
-        <CardTitle className="text-2xl text-emerald-900 dark:text-emerald-300">
-          Application Successfully Dispatched!
-        </CardTitle>
-        <p className="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-          Your pre-verified student profile and custom landlord addenda have been securely routed to{" "}
-          <strong>{landlordName}</strong> for <strong>{propertyTitle}</strong>.
-        </p>
-        <div className="pt-2">
-          <Badge variant="success" size="lg">
-            Status: Pending Landlord Tenancy Acceptance
+        <div>
+          <CardTitle className="text-2xl text-emerald-950 font-bold">
+            Application Successfully Dispatched!
+          </CardTitle>
+          <p className="text-xs text-slate-600 max-w-md mx-auto mt-1.5 leading-relaxed">
+            Your verified student credentials, academic placement details, and bursary declarations have been securely submitted to{" "}
+            <strong>{landlordName}</strong> for <strong>{propertyTitle}</strong>.
+          </p>
+        </div>
+
+        <div className="pt-1 flex justify-center">
+          <Badge variant="success" size="lg" className="py-1 px-3.5">
+            Status: Application Under Review by Landlord
           </Badge>
+        </div>
+
+        {/* Action CTAs */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/dashboard/student/applications"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
+          >
+            <span>Track on My Dashboard</span>
+            <LuArrowRight className="w-4 h-4" />
+          </Link>
+
+          <a
+            href={`/api/applications/proof/${submittedAppId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-slate-300 hover:border-[#005F56] bg-white text-slate-800 hover:text-[#005F56] text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5"
+          >
+            <LuDownload className="w-4 h-4 text-[#005F56]" />
+            <span>Download Proof Letter (PDF)</span>
+          </a>
         </div>
       </Card>
     );
   }
 
   return (
-    <Card variant="elevated" className="border border-slate-200 dark:border-navy-700">
-      <CardHeader className="border-b border-slate-100 dark:border-navy-800 pb-4">
+    <Card variant="elevated" className="border border-slate-200">
+      <CardHeader className="border-b border-slate-100 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="navy" size="sm">
                 Accredited Application
               </Badge>
               <Badge variant="info" size="sm">
-                R{monthlyRent.toLocaleString()}/mo
+                R{displayRent.toLocaleString()}/mo
               </Badge>
             </div>
-            <CardTitle className="text-xl mt-1.5">{propertyTitle}</CardTitle>
-            <CardDescription className="text-xs">
-              Direct submission to housing operator: <strong>{landlordName}</strong>
+            <CardTitle className="text-lg font-bold mt-1.5">{propertyTitle}</CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Direct submission to verified landlord: <strong>{landlordName}</strong>
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6 pt-6">
+        <CardContent className="space-y-6 pt-5">
           {errorMessage && (
             <div className="p-3.5 rounded-xl bg-red-50 text-red-700 border border-red-200 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              <LuInfo className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Section 1: Pre-Populated Verified Base Student Profile */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              1. Verified Student KYC (Auto-Populated from Registry)
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <LuGraduationCap className="w-4 h-4 text-[#005F56]" />
+              1. Verified Student KYC &amp; Funding Profile
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-navy-800/70 border border-slate-200/70 dark:border-navy-700 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
               <div>
                 <span className="text-slate-400 font-medium">Applicant:</span>{" "}
-                <strong className="text-slate-900 dark:text-white">
-                  {initialStudent.name} {initialStudent.surname}
+                <strong className="text-slate-900">
+                  {studentData.name} {studentData.surname}
                 </strong>
               </div>
               <div>
                 <span className="text-slate-400 font-medium">Student Number:</span>{" "}
-                <strong className="text-slate-900 dark:text-white">{initialStudent.studentNumber}</strong>
+                <strong className="text-slate-900">{studentData.studentNumber}</strong>
               </div>
               <div>
                 <span className="text-slate-400 font-medium">Institution:</span>{" "}
-                <strong className="text-blue-600 dark:text-blue-400">{initialStudent.universityName}</strong>
+                <strong className="text-slate-800">{studentData.universityName}</strong>
               </div>
               <div>
                 <span className="text-slate-400 font-medium">Bursary Funder:</span>{" "}
-                <strong className="text-emerald-600 dark:text-emerald-400">
-                  {initialStudent.funderName} (R{initialStudent.monthlyAllowance}/mo)
+                <strong className="text-[#005F56]">
+                  {studentData.funderName} (R{studentData.monthlyAllowance || 4800}/mo)
                 </strong>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Dynamically Injected Landlord Custom Fields */}
+          {/* Section 2: Room Selection & Academic Intake */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <LuBed className="w-4 h-4 text-[#005F56]" />
+              2. Target Room Layout &amp; Intake Period
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {rooms.length > 0 ? (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Select Room Layout
+                  </label>
+                  <select
+                    value={activeRoomId}
+                    onChange={(e) => handleRoomSelect(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
+                  >
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} — R{r.monthlyPrice.toLocaleString()}/mo ({r.typeName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              <div className={rooms.length > 0 ? "" : "sm:col-span-2"}>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Intake Academic Period
+                </label>
+                <select
+                  value={intakeDuration}
+                  onChange={(e) => setIntakeDuration(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56]"
+                >
+                  <option value="Semester 1 (Immediate)">Semester 1 (Immediate Placement)</option>
+                  <option value="Semester 2">Semester 2 Academic Intake</option>
+                  <option value="2027 Full Year">2027 Full Academic Year</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Dynamically Injected Landlord Custom Fields */}
           {customRequirements.length > 0 && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-600" />
-                  2. Landlord Custom Requirement Addenda ({customRequirements.length} Injected Controls)
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <LuFileSpreadsheet className="w-4 h-4 text-[#005F56]" />
+                  3. Accommodation Addenda Requirements
                 </h4>
-                <span className="text-[11px] text-purple-600 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded font-medium">
-                  Dynamic Form Engine
+                <span className="text-[10px] text-[#005F56] bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-200">
+                  Landlord Requirements
                 </span>
               </div>
 
-              <div className="space-y-4 p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/70 dark:border-purple-900/40">
+              <div className="space-y-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
                 {customRequirements.map((req) => (
                   <div key={req.id} className="space-y-1.5">
                     {req.type === "medical_waiver" && (
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <HeartPulse className="w-3.5 h-3.5 text-red-500" />
-                          {req.label} {req.required && <span className="text-red-500">*</span>}
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <LuHeartPulse className="w-3.5 h-3.5 text-rose-500" />
+                          {req.label} {req.required && <span className="text-rose-500">*</span>}
                         </label>
                         {req.description && <p className="text-[11px] text-slate-500">{req.description}</p>}
                         <Textarea
@@ -258,9 +363,9 @@ export function DynamicApplicationForm({
 
                     {req.type === "guarantor_affidavit" && (
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-blue-500" />
-                          {req.label} {req.required && <span className="text-red-500">*</span>}
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <LuUser className="w-3.5 h-3.5 text-[#005F56]" />
+                          {req.label} {req.required && <span className="text-rose-500">*</span>}
                         </label>
                         {req.description && <p className="text-[11px] text-slate-500">{req.description}</p>}
                         <Input
@@ -274,8 +379,8 @@ export function DynamicApplicationForm({
 
                     {req.type === "select" && req.options && (
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {req.label} {req.required && <span className="text-red-500">*</span>}
+                        <label className="text-xs font-bold text-slate-800">
+                          {req.label} {req.required && <span className="text-rose-500">*</span>}
                         </label>
                         {req.description && <p className="text-[11px] text-slate-500">{req.description}</p>}
                         <Select
@@ -301,37 +406,38 @@ export function DynamicApplicationForm({
             </div>
           )}
 
-          {/* Section 3: Applicant Personal Cover Message */}
-          <div className="space-y-1.5 pt-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              3. Applicant Introduction to Landlord (Optional)
+          {/* Section 4: Applicant Personal Cover Message */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              4. Note to Landlord (Optional)
             </label>
             <Textarea
               rows={2}
-              placeholder="Introduce yourself, desired move-in date, or preferred room type..."
+              placeholder="Introduce yourself, desired move-in date, or roommate preferences..."
               value={studentMessage}
               onChange={(e) => setStudentMessage(e.target.value)}
             />
           </div>
         </CardContent>
 
-        <CardFooter className="bg-slate-50 dark:bg-navy-900 border-t border-slate-100 dark:border-navy-800 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <CardFooter className="bg-slate-50 border-t border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-xs text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            Auto-binds to Cryptographic Confirmation upon approval
+            <LuShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Cryptographically verifiable on official lease issuance</span>
           </span>
           <Button
             type="submit"
             variant="emerald"
             size="md"
             isLoading={submitting}
-            rightIcon={<Send className="w-4 h-4" />}
+            rightIcon={<LuSend className="w-4 h-4" />}
             className="w-full sm:w-auto"
           >
-            Submit Accredited Application
+            Submit Application Directly
           </Button>
         </CardFooter>
       </form>
     </Card>
   );
 }
+

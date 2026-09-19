@@ -234,9 +234,22 @@ function LoginForm({ role }: { role: Role }) {
 
       // Validate next parameter belongs to this user's role before trusting it
       if (next) {
-        if (userRole === "STUDENT" && (next.startsWith("/dashboard/student") || next.startsWith("/onboarding"))) {
+        if (
+          userRole === "STUDENT" &&
+          (next.startsWith("/dashboard/student") ||
+            next.startsWith("/onboarding") ||
+            next.startsWith("/residences/") ||
+            next.startsWith("/properties/") ||
+            next.startsWith("/student/"))
+        ) {
           targetUrl = next;
-        } else if (userRole === "LANDLORD" && (next.startsWith("/dashboard/landlord") || next.startsWith("/landlord"))) {
+        } else if (
+          userRole === "LANDLORD" &&
+          (next.startsWith("/dashboard/landlord") ||
+            next.startsWith("/landlord") ||
+            next.startsWith("/residences/") ||
+            next.startsWith("/properties/"))
+        ) {
           targetUrl = next;
         } else if (userRole === "SRC_REPRESENTATIVE" && (next.startsWith("/dashboard/src") || next.startsWith("/src"))) {
           targetUrl = next;
@@ -327,6 +340,8 @@ const SA_UNIVERSITIES = [
 
 function RegisterForm({ role }: { role: Role }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const isSrc = role === "SRC_REPRESENTATIVE";
   const [form, setForm] = useState({
     name: "",
@@ -396,9 +411,11 @@ function RegisterForm({ role }: { role: Role }) {
       }
 
       setRedirecting(true);
-      const targetUrl = data.user?.role === "SRC_REPRESENTATIVE"
-        ? "/dashboard/src"
-        : data.nextStep || (role === "LANDLORD" ? "/landlord/onboarding" : "/onboarding");
+      const targetUrl =
+        next ||
+        (data.user?.role === "SRC_REPRESENTATIVE"
+          ? "/dashboard/src"
+          : data.nextStep || (role === "LANDLORD" ? "/landlord/onboarding" : "/onboarding"));
       window.location.href = targetUrl;
     } catch (err: any) {
       console.error("Google register error:", err);
@@ -458,7 +475,8 @@ function RegisterForm({ role }: { role: Role }) {
       setRedirecting(true);
       const targetEmail = data.email || emailToSubmit;
       const targetRole = data.role || role;
-      window.location.href = `/verify?email=${encodeURIComponent(targetEmail)}&role=${encodeURIComponent(targetRole)}`;
+      const verifyUrl = `/verify?email=${encodeURIComponent(targetEmail)}&role=${encodeURIComponent(targetRole)}${next ? `&next=${encodeURIComponent(next)}` : ""}`;
+      window.location.href = verifyUrl;
     } catch (err: any) {
       setError(err.message || "An error occurred");
       setLoading(false);
