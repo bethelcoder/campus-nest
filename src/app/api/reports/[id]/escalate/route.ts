@@ -27,12 +27,12 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const updated = await prisma.safetyReport.update({
     where: { id: report.id },
     data: {
-      status: "UNDER_INTERVENTION",
+      status: "ESCALATED",
       type: "RIGHTS_VIOLATION_CRISIS",
       severity: "CRITICAL_EMERGENCY",
       slaHours: 4,
       slaExpiresAt: new Date(Date.now() + 4 * 60 * 60 * 1000),
-      actionNotes: "Escalated by student to the SRC for intervention.",
+      actionNotes: "Escalated by student to the SRC for review and intervention.",
     },
   });
 

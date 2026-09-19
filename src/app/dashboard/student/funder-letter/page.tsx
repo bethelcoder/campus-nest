@@ -47,7 +47,7 @@ export default async function StudentFunderLetterPage() {
     <B2cStudentLayout activeTab="QR Funder Letter" user={user}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#7C3AED]">Residence verification</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#059669]">Residence verification</p>
           <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] md:text-3xl">Request a funder letter</h1>
           <p className="max-w-3xl text-sm leading-6 text-[#64748B]">
             Select a residence you have applied for. CampusNest will only issue a letter when the residence is accredited,

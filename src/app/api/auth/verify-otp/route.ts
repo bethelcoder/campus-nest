@@ -65,12 +65,17 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      await sendOtpEmail({
-        to: user.email,
-        code: otp,
-        name: user.name,
-        role: user.role,
-      }).catch((err) => console.warn("Auto-dispatch email warning:", err));
+      try {
+        await sendOtpEmail({
+          to: user.email,
+          code: otp,
+          name: user.name,
+          role: user.role,
+        });
+      } catch (err) {
+        console.error("Auto-dispatch email error:", err);
+        return NextResponse.json({ error: "Verification email could not be sent. Please contact support." }, { status: 502 });
+      }
 
       remainingCooldown = RESEND_COOLDOWN_SECONDS;
     }
@@ -243,12 +248,17 @@ export async function PUT(req: NextRequest) {
       },
     });
 
-    await sendOtpEmail({
-      to: user.email,
-      code: otp,
-      name: user.name,
-      role: user.role,
-    }).catch((err) => console.warn("Resend email warning:", err));
+    try {
+      await sendOtpEmail({
+        to: user.email,
+        code: otp,
+        name: user.name,
+        role: user.role,
+      });
+    } catch (err) {
+      console.error("Resend email error:", err);
+      return NextResponse.json({ error: "Verification email could not be sent. Please try again later." }, { status: 502 });
+    }
 
     return NextResponse.json({
       sent: true,

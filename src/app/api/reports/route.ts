@@ -7,7 +7,7 @@ import { sendMaintenanceReportEmail } from "@/lib/email";
 const reportSchema = z.object({
   propertyId: z.string(),
   subject: z.string().trim().min(3),
-  description: z.string().trim().min(10),
+  description: z.string().trim().min(3),
   type: z.enum(["STANDARD_MAINTENANCE", "RIGHTS_VIOLATION_CRISIS"]).default("STANDARD_MAINTENANCE"),
   severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL_EMERGENCY"]).default("MEDIUM"),
   category: z.string().trim().min(1).optional(),

@@ -49,6 +49,7 @@ import {
 import { extractRoomsFromProperty, AMENITY_METADATA, ROOM_FEATURE_LABELS, type ParsedRoom } from "@/lib/rooms";
 import { DynamicApplicationForm } from "@/components/properties/DynamicApplicationForm";
 import { getPublicMediaUrl, FALLBACK_RESIDENCE_IMAGES } from "@/lib/media";
+import GoogleMap, { GoogleMapsDirectionsLink, type MapLocation } from "@/components/maps/google-map";
 
 interface StudentResidenceDetailViewProps {
   property: any;
@@ -135,6 +136,10 @@ export default function StudentResidenceDetailView({
   const landlordName = property.landlord
     ? `${property.landlord.name || ""} ${property.landlord.surname || ""}`.trim() || "Verified Property Manager"
     : "Verified Residence Landlord";
+  const mapLocation: MapLocation | null =
+    typeof property.latitude === "number" && typeof property.longitude === "number"
+      ? { latitude: property.latitude, longitude: property.longitude }
+      : null;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 font-poppins">
@@ -310,6 +315,19 @@ export default function StudentResidenceDetailView({
             })}
           </div>
         </div>
+
+        <section className="grid grid-cols-1 gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs md:grid-cols-[1fr_1.4fr] md:p-6">
+          <div className="flex flex-col justify-center">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#005F56]">Location &amp; directions</p>
+            <h2 className="mt-2 text-xl font-bold text-slate-900">Find {property.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{property.address}, {property.suburb}, {property.city}</p>
+            <div className="mt-4">
+              <GoogleMapsDirectionsLink location={mapLocation} />
+              {!mapLocation && <p className="text-xs text-slate-500">The landlord has not pinned this residence on the map yet.</p>}
+            </div>
+          </div>
+          <GoogleMap location={mapLocation} address={`${property.address}, ${property.suburb}, ${property.city}`} className="h-64" />
+        </section>
 
         {/* Content & Sidebar Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">

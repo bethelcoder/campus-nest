@@ -26,8 +26,13 @@ export default async function PublicResidencesDirectoryPage() {
     orderBy: { createdAt: "desc" },
     include: {
       landlord: {
-        select: { name: true, surname: true },
+        select: {
+          name: true,
+          surname: true,
+          landlordProfile: { select: { companyName: true, entityType: true } },
+        },
       },
+      roomListings: { select: { availableUnits: true } },
     },
   });
 
@@ -93,6 +98,16 @@ export default async function PublicResidencesDirectoryPage() {
 
               const score = p.safetyScore ? Number(p.safetyScore).toFixed(1) : null;
 
+              const resolvedImages = (p.images || []).map(getPublicMediaUrl).filter(Boolean);
+              const photoCount = resolvedImages.length;
+              const thumbnails = resolvedImages.slice(1, 4);
+              const publicAmenities = (p.amenities || []).filter((a) => a !== "NSFAS_ACCREDITED");
+              const providerName =
+                p.landlord.landlordProfile?.companyName ||
+                `${p.landlord.name} ${p.landlord.surname}`;
+              const roomsAvailable = p.roomListings.reduce((sum, r) => sum + r.availableUnits, 0);
+              const inspected = Boolean(p.physicalInspectionAt && p.physicalInspectorName);
+
               return (
                 <Link
                   key={p.id}
@@ -125,7 +140,21 @@ export default async function PublicResidencesDirectoryPage() {
                         <span>{score}/10</span>
                       </div>
                     )}
+
+                    {photoCount > 0 && (
+                      <span className="absolute bottom-3 right-3 px-2 py-1 rounded bg-slate-900/70 text-white text-[10px] font-bold backdrop-blur-xs">
+                        {photoCount} {photoCount === 1 ? "photo" : "photos"}
+                      </span>
+                    )}
                   </div>
+
+                  {thumbnails.length > 0 && (
+                    <div className="grid grid-cols-3 gap-1 bg-white px-1 pt-1">
+                      {thumbnails.map((src, i) => (
+                        <img key={i} src={src} alt={`${p.title} photo ${i + 2}`} className="h-14 w-full rounded-lg object-cover" />
+                      ))}
+                    </div>
+                  )}
 
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
@@ -135,8 +164,27 @@ export default async function PublicResidencesDirectoryPage() {
 
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <LuMapPin className="w-3.5 h-3.5 text-[#005F56] shrink-0" />
-                        <span className="truncate">{p.address}, {p.suburb}</span>
+                        <span className="truncate">{p.address}, {p.suburb}, {p.city}</span>
                       </p>
+
+                      {p.description && (
+                        <p className="line-clamp-2 text-xs leading-5 text-slate-500">{p.description}</p>
+                      )}
+
+                      {publicAmenities.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {publicAmenities.slice(0, 4).map((a) => (
+                            <span key={a} className="px-2 py-0.5 rounded bg-slate-100 font-medium text-[10px] text-slate-600">
+                              {a.replace(/_/g, " ")}
+                            </span>
+                          ))}
+                          {publicAmenities.length > 4 && (
+                            <span className="px-2 py-0.5 rounded bg-slate-100 font-medium text-[10px] text-slate-400">
+                              +{publicAmenities.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-2 text-xs text-slate-600 pt-1">
                         <span className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 font-medium text-[11px]">
@@ -144,18 +192,39 @@ export default async function PublicResidencesDirectoryPage() {
                           <span>{p.bedrooms || 1} Rooms</span>
                         </span>
 
+                        {p.bathrooms != null && (
+                          <span className="px-2.5 py-1 rounded bg-slate-100 font-medium text-[11px]">
+                            {p.bathrooms} Bath
+                          </span>
+                        )}
+
+                        {p.depositAmount && (
+                          <span className="px-2.5 py-1 rounded bg-slate-100 font-medium text-[11px]">
+                            R {Number(p.depositAmount).toLocaleString()} deposit
+                          </span>
+                        )}
+
                         {p.distanceToCampus && (
                           <span className="px-2.5 py-1 rounded bg-slate-100 font-medium text-[11px]">
                             {Number(p.distanceToCampus).toFixed(1)} km to Campus
                           </span>
                         )}
                       </div>
+
+                      <p className="pt-0.5 text-[10px] font-bold text-slate-400">
+                        Listed by {providerName}
+                        {p.landlord.landlordProfile?.entityType
+                          ? ` · ${p.landlord.landlordProfile.entityType.replaceAll("_", " ")}`
+                          : ""}
+                        {inspected ? " · Physically inspected" : ""}
+                        {roomsAvailable > 0 ? ` · ${roomsAvailable} rooms available` : ""}
+                      </p>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="pt-3 border-t border-slate-100 flex items-end justify-between gap-2">
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          From
+                          {p.depositAmount ? "From" : "Monthly Rent"}
                         </span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-base font-black text-slate-900">
@@ -163,6 +232,11 @@ export default async function PublicResidencesDirectoryPage() {
                           </span>
                           <span className="text-[10px] text-slate-500 font-medium">/ month</span>
                         </div>
+                        {p.maxOccupants != null && (
+                          <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                            Up to {p.maxOccupants} occupants
+                          </span>
+                        )}
                       </div>
 
                       <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#005F56]/10 group-hover:bg-[#005F56] group-hover:text-white text-[#005F56] text-xs font-bold transition-all">

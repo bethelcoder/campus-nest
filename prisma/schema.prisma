@@ -180,6 +180,8 @@ model LandlordProfile {
   draftCity              String?
   draftNearestUniversity String?
   draftDistanceToCampus  Decimal?
+  draftLatitude          Float?
+  draftLongitude         Float?
   draftBedrooms          Int?
   draftPriceMonthly      Decimal?
   draftAmenities         String[]  @default([])
@@ -194,6 +196,8 @@ model Property {
   address           String
   suburb            String
   city              String
+  latitude          Float?
+  longitude         Float?
   priceMonthly      Decimal
   depositAmount     Decimal?
   bedrooms          Int
@@ -228,6 +232,7 @@ model Property {
   @@index([status])
   @@index([priceMonthly])
   @@index([safetyScore])
+  @@index([latitude, longitude])
 }
 
 model Favorite {

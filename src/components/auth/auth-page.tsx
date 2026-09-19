@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, useEffect } from "react";
-import { FaFacebookF } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { loginWithGoogle } from "@/lib/firebase";
 import { formatSrcAlias } from "@/lib/auth";
@@ -256,7 +255,7 @@ function LoginForm({ role }: { role: Role }) {
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
       {role !== "SRC_REPRESENTATIVE" && (
         <>
-          <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
+          <div className="grid grid-cols-1 gap-2.5">
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -274,19 +273,9 @@ function LoginForm({ role }: { role: Role }) {
                 </>
               )}
             </button>
-            <button
-              type="button"
-              disabled={googleLoading || loading || redirecting}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
-            >
-              <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
-                <FaFacebookF aria-hidden="true" size={11} />
-              </span>{" "}
-              Continue with Facebook
-            </button>
           </div>
           <div className="flex items-center gap-2.5 text-[9px] text-[#a3acb8] before:h-px before:flex-1 before:bg-[#edf0f3] after:h-px after:flex-1 after:bg-[#edf0f3]">
-            <span>or sign in with university credentials</span>
+            <span>or sign in using your email</span>
           </div>
         </>
       )}
@@ -478,10 +467,10 @@ function RegisterForm({ role }: { role: Role }) {
 
   return (
     <form onSubmit={handleSubmit} className="grid w-full max-w-[460px] gap-[18px]">
-      {/* 3rd Party Google Registration Option (hidden for SRC to enforce official university credentials) */}
+      {/* Google registration option, hidden for SRC accounts. */}
       {!isSrc && (
         <>
-          <div className="grid grid-cols-2 gap-2.5 max-[430px]:grid-cols-1">
+          <div className="grid grid-cols-1 gap-2.5">
             <button
               type="button"
               onClick={handleGoogleRegister}
@@ -498,16 +487,6 @@ function RegisterForm({ role }: { role: Role }) {
                   <FcGoogle aria-hidden="true" size={18} /> Continue with Google
                 </>
               )}
-            </button>
-            <button
-              type="button"
-              disabled={googleLoading || loading || redirecting}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#dfe5ec] bg-white text-center font-poppins text-xs font-semibold leading-[1.5] text-[#1d2734] shadow-[0_3px_12px_rgba(29,48,67,0.06)] hover:border-[#d7e6f3] hover:bg-[#f8fbff] cursor-pointer disabled:opacity-60"
-            >
-              <span className="grid h-[17px] w-[17px] place-items-center rounded-full bg-[#1877f2] text-white">
-                <FaFacebookF aria-hidden="true" size={11} />
-              </span>{" "}
-              Continue with Facebook
             </button>
           </div>
 

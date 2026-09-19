@@ -115,6 +115,7 @@ export default function LandlordTenancyView({
   const roomSlots = useMemo(() => {
     if (!selectedProperty || selectedPropertyId === "ALL") return [];
     const tenancies = selectedProperty.tenancies || [];
+    const assignedTenancyIds = new Set<string>();
 
     const slots: Array<{
       slotId: string;
@@ -129,21 +130,25 @@ export default function LandlordTenancyView({
       assignedTenancy: any | null;
     }> = [];
 
-    selectedPropertyRooms.forEach((r, rIdx) => {
-      // Find tenancies that match this room
+    // Pass 1: Build slots and match direct room type / room name tenancies
+    selectedPropertyRooms.forEach((r) => {
       const matchingTenancies = tenancies.filter(
         (t: any) =>
-          t.roomName === r.name ||
-          t.roomType === r.type ||
-          (t.roomName && t.roomName.toLowerCase().includes(r.name.toLowerCase()))
+          !assignedTenancyIds.has(t.id) &&
+          (t.roomName === r.name ||
+            t.roomType === r.type ||
+            (t.roomName && t.roomName.toLowerCase().includes(r.name.toLowerCase())))
       );
 
+      let roomMatchIdx = 0;
       for (let unit = 1; unit <= r.quantity; unit++) {
         const unitName = r.quantity > 1 ? `${r.name} (Unit ${unit})` : r.name;
         for (let bed = 1; bed <= r.bedsPerRoom; bed++) {
-          const slotIdx = slots.length;
-          // Assign an occupant if available
-          const assigned = matchingTenancies[slotIdx] || tenancies[slotIdx] || null;
+          const assigned = matchingTenancies[roomMatchIdx] || null;
+          if (assigned) {
+            assignedTenancyIds.add(assigned.id);
+            roomMatchIdx++;
+          }
 
           slots.push({
             slotId: `${r.id}-unit-${unit}-bed-${bed}`,
@@ -160,6 +165,17 @@ export default function LandlordTenancyView({
         }
       }
     });
+
+    // Pass 2: Assign any remaining unallocated tenancies to first vacant slots
+    const remainingTenancies = tenancies.filter((t: any) => !assignedTenancyIds.has(t.id));
+    let remIdx = 0;
+    for (const slot of slots) {
+      if (!slot.assignedTenancy && remIdx < remainingTenancies.length) {
+        slot.assignedTenancy = remainingTenancies[remIdx];
+        assignedTenancyIds.add(remainingTenancies[remIdx].id);
+        remIdx++;
+      }
+    }
 
     return slots;
   }, [selectedProperty, selectedPropertyId, selectedPropertyRooms]);

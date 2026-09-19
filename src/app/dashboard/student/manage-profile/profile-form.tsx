@@ -83,7 +83,7 @@ export default function ProfileForm({
           {fields.slice(0, 8).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
-              <input type={key === "dateOfBirth" ? "date" : "text"} value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+              <input type={key === "dateOfBirth" ? "date" : "text"} value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
             </label>
           ))}
         </div>
@@ -95,12 +95,12 @@ export default function ProfileForm({
           {fields.slice(8, 14).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
-              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
             </label>
           ))}
           <label className="space-y-1.5 text-xs font-bold text-[#334155] sm:col-span-2">
             Current address
-            <textarea rows={3} value={address} onChange={(event) => setAddress(event.target.value)} className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+            <textarea rows={3} value={address} onChange={(event) => setAddress(event.target.value)} className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
           </label>
         </div>
       </section>
@@ -111,7 +111,7 @@ export default function ProfileForm({
           {fields.slice(14, 17).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
-              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
             </label>
           ))}
         </div>
@@ -126,7 +126,7 @@ export default function ProfileForm({
                 {(["name", "phone", "relationship"] as const).map((key) => (
                   <label key={key} className="space-y-1 text-xs font-bold text-[#334155]">
                     {key === "name" ? "Name" : key === "phone" ? "Phone" : "Relationship"}
-                    <input value={contact[key]} onChange={(event) => setContacts((current) => current.map((item, contactIndex) => contactIndex === index ? { ...item, [key]: event.target.value } : item))} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+                    <input value={contact[key]} onChange={(event) => setContacts((current) => current.map((item, contactIndex) => contactIndex === index ? { ...item, [key]: event.target.value } : item))} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
                   </label>
                 ))}
               </div>
@@ -150,7 +150,7 @@ export default function ProfileForm({
           {fields.slice(20, 27).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
-              <input type={key === "monthlyAllowance" || key === "monthlyBudget" ? "number" : key === "funderContactEmail" ? "email" : "text"} step={key === "monthlyAllowance" || key === "monthlyBudget" ? "0.01" : undefined} value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+              <input type={key === "monthlyAllowance" || key === "monthlyBudget" ? "number" : key === "funderContactEmail" ? "email" : "text"} step={key === "monthlyAllowance" || key === "monthlyBudget" ? "0.01" : undefined} value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
             </label>
           ))}
         </div>
@@ -158,7 +158,7 @@ export default function ProfileForm({
           {fields.slice(27).map(([key, label]) => (
             <label key={key} className="space-y-1.5 text-xs font-bold text-[#334155]">
               {label}
-              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#6366F1]" />
+              <input value={values[key] || ""} onChange={(event) => update(key, event.target.value)} className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-normal text-[#0F172A] outline-none focus:border-[#059669]" />
             </label>
           ))}
         </div>

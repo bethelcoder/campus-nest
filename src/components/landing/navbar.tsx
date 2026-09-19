@@ -125,7 +125,7 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
 
                 {signInDropdownOpen && (
                   <div
-                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
+                    className="absolute right-0 top-full w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                       Choose Portal
@@ -220,7 +220,7 @@ export default function Navbar({ mode = "student" }: NavbarProps) {
 
                 {signInDropdownOpen && (
                   <div
-                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
+                    className="absolute right-0 top-full w-64 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
                   >
                     <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                       Choose Portal

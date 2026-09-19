@@ -1,7 +1,8 @@
 // CampusNest Modular Email Service with Brevo API & Offline Fallback
 
 const SENDER_NAME = "CampusNest";
-const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || "campusnest402@gmail.com";
+const configuredFrom = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL || "campusnest402@gmail.com";
+const SENDER_EMAIL = configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom;
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -62,21 +63,22 @@ export async function sendRawEmail({
       const { Resend } = await import("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
       const resendRes = await resend.emails.send({
-        from: `${fromName} <${fromEmail}>`,
+        from: process.env.EMAIL_FROM || `${fromName} <${fromEmail}>`,
         to: recipients,
         subject,
         html,
         attachments,
       });
+      if (resendRes.error) {
+        throw new Error(resendRes.error.message || "Resend rejected the email");
+      }
       return { success: true, data: resendRes, provider: "resend" };
     } catch (err) {
       console.warn("Resend email error:", err);
     }
   }
 
-  // 3. Local Development Simulation
-  console.info(`[Email Dispatched (Local Simulation)] To: ${recipients.join(", ")}, Subject: ${subject}`);
-  return { success: true, simulated: true };
+  throw new Error("No working email provider is configured. Set RESEND_API_KEY or BREVO_API_KEY and EMAIL_FROM.");
 }
 
 export async function sendOtpEmail(params: {

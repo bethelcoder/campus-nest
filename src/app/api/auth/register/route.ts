@@ -118,12 +118,20 @@ export async function POST(req: NextRequest) {
     }).catch((err) => console.warn("Admin notification error:", err));
 
     // Send 6-digit OTP email via Brevo
-    await sendOtpEmail({
-      to: loginEmail,
-      code: verificationCode,
-      name: finalName,
-      role: data.role,
-    }).catch((err) => console.warn("Email dispatch error:", err));
+    try {
+      await sendOtpEmail({
+        to: loginEmail,
+        code: verificationCode,
+        name: finalName,
+        role: data.role,
+      });
+    } catch (err) {
+      console.error("Email dispatch error:", err);
+      return NextResponse.json(
+        { error: "Your account was created, but the verification email could not be sent. Please try again later." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json(
       {

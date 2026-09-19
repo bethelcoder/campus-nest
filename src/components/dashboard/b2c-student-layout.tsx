@@ -113,7 +113,7 @@ export default function B2cStudentLayout({
                   onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
                   className="flex items-center gap-2 rounded-xl px-1.5 py-1 text-left hover:bg-black/[0.04] transition-colors cursor-pointer group"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#9333EA] text-white shadow-xs shrink-0 font-bold text-xs">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#059669] to-[#10B981] text-white shadow-xs shrink-0 font-bold text-xs">
                     CN
                   </div>
                   <div className="flex items-center gap-1.5 overflow-hidden">
@@ -129,7 +129,7 @@ export default function B2cStudentLayout({
                   </div>
                 </button>
               ) : (
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#9333EA] text-white shadow-xs shrink-0 font-bold text-xs">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#059669] to-[#10B981] text-white shadow-xs shrink-0 font-bold text-xs">
                   CN
                 </div>
               )}
@@ -316,7 +316,7 @@ export default function B2cStudentLayout({
                     placeholder="Search residences, bursary codes, bylaws..."
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white pl-10 pr-3.5 text-[13.5px] text-[#0F172A] placeholder-[#94A3B8] outline-none transition-all focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/20 shadow-2xs"
+                    className="h-10 w-full rounded-xl border border-[#E5E7EB] bg-white pl-10 pr-3.5 text-[13.5px] text-[#0F172A] placeholder-[#94A3B8] outline-none transition-all focus:border-[#059669] focus:ring-1 focus:ring-[#059669]/20 shadow-2xs"
                   />
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function B2cStudentLayout({
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2.5 pl-1 cursor-pointer select-none rounded-xl p-1 hover:bg-black/[0.03] transition-colors text-left"
                   >
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E5E7EB] shadow-2xs bg-[#EDE9FE] flex items-center justify-center font-bold text-xs text-[#7C3AED]">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E5E7EB] shadow-2xs bg-[#D1FAE5] flex items-center justify-center font-bold text-xs text-[#059669]">
                       {user.name.charAt(0)}
                       {user.surname.charAt(0)}
                     </div>

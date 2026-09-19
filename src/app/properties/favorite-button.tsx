@@ -75,7 +75,7 @@ export default function FavoriteButton({
           title={saved ? "Remove from saved favorites" : "Save residence to favorites"}
           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
             saved
-              ? "bg-[#7C3AED] text-white shadow-md hover:bg-[#6D28D9]"
+              ? "bg-[#059669] text-white shadow-md hover:bg-[#047857]"
               : "border border-[#CBD5E1] bg-white text-[#334155] hover:bg-[#F8FAFC] hover:border-[#94A3B8]"
           } ${className}`}
         >
@@ -105,7 +105,7 @@ export default function FavoriteButton({
         title={saved ? "Remove from saved favorites" : "Save residence to favorites"}
         className={`flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition-all duration-200 cursor-pointer ${
           saved
-            ? "border-white bg-white text-[#7C3AED] shadow-md scale-105"
+            ? "border-white bg-white text-[#059669] shadow-md scale-105"
             : "border-white/40 bg-black/20 text-white hover:bg-black/40 hover:scale-105"
         } ${className}`}
       >

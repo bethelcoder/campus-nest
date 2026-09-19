@@ -1,0 +1,14 @@
+-- Keep the live database aligned with the current Prisma User and Property models.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastOtpSentAt" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "firebaseUid" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "institutionName" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboardingCompleted" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboardingStep" INTEGER NOT NULL DEFAULT 1;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "User_firebaseUid_key" ON "User"("firebaseUid");
+
+ALTER TABLE "Property" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION;
+ALTER TABLE "Property" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION;
+
+ALTER TABLE "LandlordProfile" ADD COLUMN IF NOT EXISTS "draftLatitude" DOUBLE PRECISION;
+ALTER TABLE "LandlordProfile" ADD COLUMN IF NOT EXISTS "draftLongitude" DOUBLE PRECISION;
