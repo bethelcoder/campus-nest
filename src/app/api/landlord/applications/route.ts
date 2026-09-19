@@ -35,50 +35,42 @@ export async function PATCH(req: NextRequest) {
   });
   if (!application) return NextResponse.json({ error: "Application not found" }, { status: 404 });
 
-  let roomListing = application.roomListing;
-
-  // If accepting and no roomListing is attached, find or create one automatically
-  if (parsed.data.status === "ACCEPTED" && !roomListing) {
-    const existingRoom = await prisma.roomListing.findFirst({
-      where: { propertyId: application.propertyId },
-    });
-
-    if (existingRoom) {
-      roomListing = existingRoom;
-    } else {
-      roomListing = await prisma.roomListing.create({
-        data: {
-          propertyId: application.propertyId,
-          name: "Standard Student Unit",
-          roomType: "Single Room",
-          monthlyRent: application.property.priceMonthly,
-          availableUnits: 10,
-        },
-      });
-    }
-
-    await prisma.application.update({
-      where: { id: application.id },
-      data: { roomListingId: roomListing.id },
-    });
-  }
-
   const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.application.update({
+    const current = await tx.application.findUnique({
       where: { id: application.id },
-      data: { status: parsed.data.status },
+      include: { roomListing: true, property: true },
     });
+    if (!current) throw new Error("APPLICATION_NOT_FOUND");
 
-    if (parsed.data.status === "ACCEPTED" && roomListing) {
-      if (roomListing.availableUnits > 0) {
-        await tx.roomListing.update({
-          where: { id: roomListing.id },
-          data: { availableUnits: { decrement: 1 } },
+    if (parsed.data.status === "ACCEPTED" && current.status !== "ACCEPTED") {
+      let roomListing = current.roomListing;
+
+      if (!roomListing || roomListing.propertyId !== current.propertyId || roomListing.availableUnits < 1) {
+        roomListing = await tx.roomListing.findFirst({
+          where: { propertyId: current.propertyId, availableUnits: { gt: 0 } },
+          orderBy: { createdAt: "asc" },
         });
       }
 
+      if (!roomListing) {
+        throw new Error("NO_AVAILABLE_ROOM");
+      }
+
+      const claimedRoom = await tx.roomListing.updateMany({
+        where: { id: roomListing.id, propertyId: current.propertyId, availableUnits: { gt: 0 } },
+        data: { availableUnits: { decrement: 1 } },
+      });
+      if (claimedRoom.count !== 1) {
+        throw new Error("NO_AVAILABLE_ROOM");
+      }
+
+      await tx.application.update({
+        where: { id: current.id },
+        data: { roomListingId: roomListing.id },
+      });
+
       const existingTenancy = await tx.tenancy.findFirst({
-        where: { studentId: application.studentId, propertyId: application.propertyId },
+        where: { studentId: current.studentId, propertyId: current.propertyId },
       });
 
       if (existingTenancy) {
@@ -90,13 +82,14 @@ export async function PATCH(req: NextRequest) {
             roomType: roomListing.roomType,
             monthlyRent: roomListing.monthlyRent,
             status: "ACTIVE",
+            startDate: new Date(),
           },
         });
       } else {
         await tx.tenancy.create({
           data: {
-            studentId: application.studentId,
-            propertyId: application.propertyId,
+            studentId: current.studentId,
+            propertyId: current.propertyId,
             roomListingId: roomListing.id,
             roomName: roomListing.name,
             roomType: roomListing.roomType,
@@ -107,8 +100,22 @@ export async function PATCH(req: NextRequest) {
         });
       }
     }
+
+    const result = await tx.application.update({
+      where: { id: current.id },
+      data: { status: parsed.data.status },
+    });
     return result;
+  }).catch((error: unknown) => {
+    if (error instanceof Error && error.message === "NO_AVAILABLE_ROOM") {
+      return null;
+    }
+    throw error;
   });
+
+  if (!updated) {
+    return NextResponse.json({ error: "No available room matches this application" }, { status: 409 });
+  }
 
   return NextResponse.json({ application: updated });
 }

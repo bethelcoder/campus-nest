@@ -58,6 +58,7 @@ function extractBaseDescription(desc?: string | null): string {
   if (i >= 0) return desc.slice(0, i).trim();
   return desc.trim();
 }
+import GoogleMap, { type MapLocation } from "@/components/maps/google-map";
 
 export interface RoomTypeItem {
   id: string;
@@ -390,6 +391,7 @@ export default function ResidenceBuilderPage({ user, initialProperty }: Residenc
       description: extractBaseDescription(initialProperty.description),
     };
   });
+  const [mapLocation, setMapLocation] = useState<MapLocation | null>(null);
 
   // Live Student Public URL State (Clean slug: /residences/name)
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -881,6 +883,8 @@ export default function ResidenceBuilderPage({ user, initialProperty }: Residenc
         address: `${basics.streetAddress}${basics.postalCode ? `, ${basics.postalCode}` : ""}`,
         suburb: basics.suburb,
         city: basics.city,
+        latitude: mapLocation?.latitude,
+        longitude: mapLocation?.longitude,
         priceMonthly: basePrice,
         bedrooms: buildingMetrics.totalBedrooms || 1,
         bathrooms: isEditMode ? initialProperty.bathrooms || 1 : 1,
@@ -1266,6 +1270,21 @@ export default function ResidenceBuilderPage({ user, initialProperty }: Residenc
                   className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#005F56]/20 focus:border-[#005F56] text-xs text-slate-900"
                 />
               </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-[#005F56]/15 bg-white p-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700">Pin residence on map</p>
+                <p className="mt-1 text-xs text-slate-500">Confirm the building location so students can find it and get directions.</p>
+              </div>
+              <GoogleMap
+                address={`${basics.streetAddress}, ${basics.suburb}, ${basics.city}`}
+                interactive
+                location={mapLocation}
+                onLocationChange={setMapLocation}
+                className="h-64"
+              />
+              <p className="text-[11px] text-slate-500">Drag the marker to the exact entrance. The location is optional until a Google Maps key is configured.</p>
             </div>
           </div>
 

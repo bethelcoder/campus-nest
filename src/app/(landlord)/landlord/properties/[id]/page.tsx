@@ -25,12 +25,27 @@ export default async function LandlordPropertyDetailPage({
       where: { id: params.id },
       include: {
         checklistItems: true,
+        reports: {
+          include: {
+            reporter: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
         applications: {
           include: {
             student: {
               include: { studentProfile: true },
             },
           },
+          orderBy: { createdAt: "desc" },
         },
         tenancies: {
           include: {
@@ -86,6 +101,13 @@ export default async function LandlordPropertyDetailPage({
       ...t,
       monthlyRent: t.monthlyRent ? Number(t.monthlyRent) : Number(property.priceMonthly),
       deposit: t.deposit ? Number(t.deposit) : null,
+    })),
+    reports: (property.reports || []).map((r) => ({
+      ...r,
+      slaExpiresAt: r.slaExpiresAt ? r.slaExpiresAt.toISOString() : null,
+      resolvedAt: r.resolvedAt ? r.resolvedAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
     })),
   };
 

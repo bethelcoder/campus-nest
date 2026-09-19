@@ -54,12 +54,20 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await sendOtpEmail({
-        to: user.email,
-        code: freshOtp,
-        name: user.name,
-        role: user.role,
-      }).catch((err) => console.warn("Login unverified email dispatch warning:", err));
+      try {
+        await sendOtpEmail({
+          to: user.email,
+          code: freshOtp,
+          name: user.name,
+          role: user.role,
+        });
+      } catch (err) {
+        console.error("Login unverified email dispatch error:", err);
+        return NextResponse.json(
+          { error: "Your verification email could not be sent. Please try again later." },
+          { status: 502 }
+        );
+      }
     }
 
     return NextResponse.json(
