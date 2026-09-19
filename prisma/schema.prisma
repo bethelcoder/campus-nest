@@ -11,6 +11,7 @@ enum UserRole {
   LANDLORD
   ADMIN
   SRC_REPRESENTATIVE
+  UNIVERSITY_ADMIN
 }
 
 enum PropertyStatus {
@@ -37,8 +38,11 @@ enum ConfirmationStatus {
 
 enum ApplicationStatus {
   PENDING
+  UNDER_REVIEW
+  OFFER_MADE
   ACCEPTED
   REJECTED
+  CANCELLED
 }
 
 enum ReportStatus {
@@ -66,6 +70,48 @@ enum ChecklistCategory {
   UTILITIES
   BUILDING_STRUCTURE
   LOCATION_RISK
+}
+
+enum LandlordVerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  ACTION_REQUIRED
+  REJECTED
+}
+
+enum ComplianceDocType {
+  OCCUPANCY_CERTIFICATE
+  FIRE_SAFETY_CERTIFICATE
+  ELECTRICAL_COC
+  HEALTH_HYGIENE_CERTIFICATE
+  BUILDING_INSURANCE_POLICY
+  TITLE_DEED_OR_LEASE
+  SECURITY_ARMED_RESPONSE_SLA
+  BACKUP_POWER_GENERATOR_CERT
+  WATER_BACKUP_SANITATION_CERT
+  EMERGENCY_EVACUATION_PLAN
+  NSFAS_ACCREDITATION_PROOF
+}
+
+enum ComplianceDocStatus {
+  PENDING_AUDIT
+  VALID
+  EXPIRED
+  REJECTED
+}
+
+enum BedGenderPolicy {
+  MALE_ONLY
+  FEMALE_ONLY
+  ANY
+}
+
+enum BedStatus {
+  VACANT
+  RESERVED
+  OCCUPIED
+  UNDER_MAINTENANCE
 }
 
 model User {
@@ -161,17 +207,39 @@ model StudentProfile {
 }
 
 model LandlordProfile {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String                     @id @default(cuid())
+  userId                 String                     @unique
+  user                   User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Step 1: Personal & Business Identity
-  entityType      String?   // INDIVIDUAL, PRIVATE_RESIDENCE, AGENCY
-  companyName     String?
-  companyRegNumber String?
-  taxNumber       String?
-  businessAddress String?
-  contactPhone    String?
+  // Step 1: Personal & Business Identity KYC
+  entityType             String?                    // INDIVIDUAL, PRIVATE_RESIDENCE, AGENCY, PTY_LTD, TRUST
+  companyName            String?
+  companyRegNumber       String?                    // e.g. 2021/123456/07
+  cipcDocumentUrl        String?                    // COR14.3 / CK registration doc
+  taxNumber              String?
+  taxPin                 String?                    // SARS Tax Compliance PIN
+  taxClearanceDocUrl     String?
+  businessAddress        String?
+  proofOfAddressDocUrl   String?
+  contactPhone           String?
+
+  // Director / Owner Verification
+  directorIdNumber       String?
+  directorIdDocUrl       String?
+  directorIdCertified    Boolean                    @default(false)
+
+  // Banking Details (For direct NSFAS disbursements & student payments)
+  bankName               String?                    // Standard Bank, FNB, ABSA, Nedbank, Capitec
+  bankAccountType        String?                    // CHEQUE, CURRENT, SAVINGS
+  bankAccountNumber      String?
+  bankBranchCode         String?
+  bankConfirmationDocUrl String?                    // Official stamped bank letter
+
+  // Accreditation & Verification status
+  providerAssociationNo  String?                    // e.g. SAPOA membership number
+  verificationStatus     LandlordVerificationStatus @default(UNVERIFIED)
+  verificationNotes      String?
+  verifiedAt             DateTime?
 
   // Step 2: Primary Residence Draft
   draftResidenceName     String?
@@ -184,55 +252,87 @@ model LandlordProfile {
   draftLongitude         Float?
   draftBedrooms          Int?
   draftPriceMonthly      Decimal?
-  draftAmenities         String[]  @default([])
+  draftAmenities         String[]                   @default([])
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
 }
 
 model Property {
-  id                String         @id @default(cuid())
-  title             String
-  address           String
-  suburb            String
-  city              String
-  latitude          Float?
-  longitude         Float?
-  priceMonthly      Decimal
-  depositAmount     Decimal?
-  bedrooms          Int
-  bathrooms         Int?
-  maxOccupants      Int?
-  description       String?
-  amenities         String[]
-  distanceToCampus  Decimal? // in km
-  images            String[]       @default([])
+  id                     String                  @id @default(cuid())
+  title                  String
+  address                String
+  suburb                 String
+  city                   String
+  postalCode             String?
+  googlePlaceId          String?
+  formattedAddress       String?
+  latitude               Float?
+  longitude              Float?
+  priceMonthly           Decimal
+  depositAmount          Decimal?
+  bedrooms               Int
+  bathrooms              Int?
+  maxOccupants           Int?
+  description            String?
+  amenities              String[]
+  distanceToCampus       Decimal?                // in km
+  images                 String[]                @default([])
 
-  safetyScore       Decimal?       // 0-10, computed from ChecklistItem results
-  status            PropertyStatus @default(DRAFT)
-  physicalInspectionAt DateTime?
-  physicalInspectorName String?
+  safetyScore            Decimal?                // 0-10, computed from ChecklistItem results
+  status                 PropertyStatus          @default(DRAFT)
+  physicalInspectionAt   DateTime?
+  physicalInspectorName  String?
   accreditationReference String?
 
-  landlordId String
-  landlord   User   @relation("LandlordProperties", fields: [landlordId], references: [id], onDelete: Cascade)
+  landlordId             String
+  landlord               User                    @relation("LandlordProperties", fields: [landlordId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
-  checklistItems ChecklistItem[]
-  roomListings   RoomListing[]
-  applications   Application[]
-  favorites      Favorite[]
-  tenancies      Tenancy[]
-  reports        SafetyReport[]
-  funderLetterRequests FunderLetterRequest[]
+  checklistItems         ChecklistItem[]
+  complianceDocs         PropertyComplianceDoc[]
+  roomListings           RoomListing[]
+  roomUnits              RoomUnit[]
+  applications           Application[]
+  favorites              Favorite[]
+  tenancies              Tenancy[]
+  reports                SafetyReport[]
+  funderLetterRequests   FunderLetterRequest[]
 
   @@index([landlordId])
   @@index([status])
   @@index([priceMonthly])
   @@index([safetyScore])
   @@index([latitude, longitude])
+}
+
+model PropertyComplianceDoc {
+  id                String              @id @default(cuid())
+  propertyId        String
+  property          Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  documentType      ComplianceDocType
+  title             String
+  fileUrl           String
+  fileName          String
+  fileSizeBytes     Int?
+  issuedDate        DateTime?
+  expiryDate        DateTime?
+  issuingBody       String?             // e.g. City of Johannesburg, City of Cape Town
+  referenceNumber    String?
+  status            ComplianceDocStatus @default(PENDING_AUDIT)
+  rejectionReason   String?
+  verifiedAt        DateTime?
+  verifiedByAdminId String?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([propertyId])
+  @@index([documentType])
+  @@index([status])
+  @@index([expiryDate])
 }
 
 model Favorite {
@@ -266,6 +366,45 @@ model ChecklistItem {
   @@index([category])
 }
 
+model RoomUnit {
+  id             String          @id @default(cuid())
+  propertyId     String
+  property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unitNumber     String          // e.g. "Unit 101", "Block B - Room 4"
+  floorLevel     Int             @default(1)
+  wingBlock      String?         // e.g. "North Wing", "Block A"
+  roomType       String          // SINGLE_ENSUITE, TWO_SHARING, FOUR_SHARING, STUDIO
+  bathroomType   String          @default("COMMUNAL") // ENSUITE, PRIVATE_EXTERNAL, COMMUNAL
+  monthlyPrice   Decimal
+  depositAmount  Decimal         @default(0)
+  isNsfasCapped  Boolean         @default(true)
+  genderPolicy   BedGenderPolicy @default(ANY)
+  amenities      String[]        @default([])
+  photos         String[]        @default([])
+
+  beds           RoomBed[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([propertyId])
+}
+
+model RoomBed {
+  id               String        @id @default(cuid())
+  unitId           String
+  unit             RoomUnit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  bedIdentifier    String        // e.g. "Bed 1", "Bed A (Window)", "Bed B (Door)"
+  status           BedStatus     @default(VACANT)
+  currentTenancyId String?
+
+  applications     Application[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([unitId])
+  @@index([status])
+}
+
 model RoomListing {
   id             String   @id @default(cuid())
   propertyId     String
@@ -285,20 +424,38 @@ model RoomListing {
 }
 
 model Application {
-  id         String            @id @default(cuid())
-  studentId  String
-  student    User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  propertyId String
-  property   Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  roomListingId String?
-  roomListing RoomListing?      @relation(fields: [roomListingId], references: [id], onDelete: Restrict)
-  message    String?
-  status     ApplicationStatus @default(PENDING)
-  createdAt  DateTime          @default(now())
+  id                  String            @id @default(cuid())
+  studentId           String
+  student             User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId          String
+  property            Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomListingId       String?
+  roomListing         RoomListing?      @relation(fields: [roomListingId], references: [id], onDelete: Restrict)
+  
+  proposedBedId       String?
+  proposedBed         RoomBed?          @relation(fields: [proposedBedId], references: [id], onDelete: SetNull)
+
+  status              ApplicationStatus @default(PENDING)
+  message             String?
+  landlordNotes       String?
+  rejectionReason     String?
+
+  // Proposed offer terms
+  offeredRoomName     String?
+  offeredMonthlyRent  Decimal?
+  offeredDeposit      Decimal?
+  leaseStartDate      DateTime?
+  leaseEndDate        DateTime?
+  offerExpiresAt      DateTime?
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now()) @updatedAt
 
   funderLetterRequest FunderLetterRequest?
 
   @@unique([studentId, propertyId])
+  @@index([propertyId, status])
+  @@index([studentId, status])
 }
 
 model FunderLetterRequest {
@@ -326,20 +483,20 @@ model FunderLetterRequest {
 }
 
 model Tenancy {
-  id         String        @id @default(cuid())
-  studentId  String
-  student    User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  propertyId String
-  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id            String        @id @default(cuid())
+  studentId     String
+  student       User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  propertyId    String
+  property      Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   roomListingId String?
-  roomListing RoomListing?  @relation(fields: [roomListingId], references: [id], onDelete: SetNull)
-  startDate  DateTime
-  endDate    DateTime?
-  status     TenancyStatus @default(PENDING)
-  roomName   String?
-  roomType   String?
-  monthlyRent Decimal?
-  deposit    Decimal?
+  roomListing   RoomListing?  @relation(fields: [roomListingId], references: [id], onDelete: SetNull)
+  startDate     DateTime
+  endDate       DateTime?
+  status        TenancyStatus @default(PENDING)
+  roomName      String?
+  roomType      String?
+  monthlyRent   Decimal?
+  deposit       Decimal?
 
   confirmationLetter ConfirmationLetter?
 
@@ -351,57 +508,57 @@ model Tenancy {
 }
 
 model ConfirmationLetter {
-  id              String             @id @default(cuid())
-  tenancyId       String             @unique
-  tenancy         Tenancy            @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  tenancyId         String             @unique
+  tenancy           Tenancy            @relation(fields: [tenancyId], references: [id], onDelete: Cascade)
 
-  studentId       String
-  student         User               @relation("StudentLetters", fields: [studentId], references: [id])
-  studentName     String
-  studentEmail    String
+  studentId         String
+  student           User               @relation("StudentLetters", fields: [studentId], references: [id])
+  studentName       String
+  studentEmail      String
 
-  propertyAddress String
-  safetyScore     Decimal?
+  propertyAddress   String
+  safetyScore       Decimal?
 
-  issuedDate      DateTime           @default(now())
-  status          ConfirmationStatus @default(DRAFT)
+  issuedDate        DateTime           @default(now())
+  status            ConfirmationStatus @default(DRAFT)
 
   endorsedByAdminId String?
-  endorsedByAdmin   User?            @relation("EndorsingAdmin", fields: [endorsedByAdminId], references: [id])
+  endorsedByAdmin   User?              @relation("EndorsingAdmin", fields: [endorsedByAdminId], references: [id])
   endorsedAt        DateTime?
 
-  funderEmail     String?
-  sentToFunderAt  DateTime?
+  funderEmail       String?
+  sentToFunderAt    DateTime?
 
-  pdfUrl          String?
-  letterReference String   @unique @default(uuid())
+  pdfUrl            String?
+  letterReference   String             @unique @default(uuid())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model SafetyReport {
-  id          String         @id @default(cuid())
-  reporterId  String
-  reporter    User           @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
-  propertyId  String
-  property    Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id           String         @id @default(cuid())
+  reporterId   String
+  reporter     User           @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  propertyId   String
+  property     Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   
-  type        TriageType     @default(STANDARD_MAINTENANCE)
-  severity    TriageSeverity @default(MEDIUM)
-  category    String?        // PLUMBING, ELECTRICAL, ILLEGAL_EVICTION, EXTORTION, etc.
-  subject     String
-  description String
-  status      ReportStatus   @default(OPEN)
+  type         TriageType     @default(STANDARD_MAINTENANCE)
+  severity     TriageSeverity @default(MEDIUM)
+  category     String?        // PLUMBING, ELECTRICAL, ILLEGAL_EVICTION, EXTORTION, etc.
+  subject      String
+  description  String
+  status       ReportStatus   @default(OPEN)
   
-  slaHours    Int            @default(48)
+  slaHours     Int            @default(48)
   slaExpiresAt DateTime?
-  resolvedAt  DateTime?
-  evidenceUrls String[]      @default([])
-  actionNotes String?
+  resolvedAt   DateTime?
+  evidenceUrls String[]       @default([])
+  actionNotes  String?
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([propertyId])
   @@index([reporterId])

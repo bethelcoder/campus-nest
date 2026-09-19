@@ -25,6 +25,9 @@ export default async function LandlordPropertyDetailPage({
       where: { id: params.id },
       include: {
         checklistItems: true,
+        complianceDocs: {
+          orderBy: { createdAt: "desc" },
+        },
         reports: {
           include: {
             reporter: {
@@ -108,6 +111,13 @@ export default async function LandlordPropertyDetailPage({
       resolvedAt: r.resolvedAt ? r.resolvedAt.toISOString() : null,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
+    })),
+    complianceDocs: (property.complianceDocs || []).map((d) => ({
+      ...d,
+      issuedDate: d.issuedDate ? d.issuedDate.toISOString() : null,
+      expiryDate: d.expiryDate ? d.expiryDate.toISOString() : null,
+      createdAt: d.createdAt.toISOString(),
+      updatedAt: d.updatedAt.toISOString(),
     })),
   };
 

@@ -38,6 +38,8 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
   const [loading, setLoading] = useState(false);
   const [fetchingDraft, setFetchingDraft] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // Authenticated Read-Only Email
   const [authEmail, setAuthEmail] = useState(initialUser?.email || "landlord@example.com");
@@ -115,12 +117,13 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
     formData.surname.trim().length > 0 &&
     formData.phone.trim().length >= 5 &&
     formData.businessAddress.trim().length >= 3 &&
-    (formData.entityType === "INDIVIDUAL" || (formData.companyName && formData.companyName.trim().length > 0));
+    (formData.entityType === "INDIVIDUAL" || (formData.companyName && formData.companyName.trim().length > 0)) &&
+    termsAccepted;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!isFormValid) {
-      setError("Please fill in all mandatory provider details.");
+      setError(termsAccepted ? "Please fill in all mandatory provider details." : "Please accept the CampusNest Terms and Privacy Policy to continue.");
       return;
     }
 
@@ -498,6 +501,17 @@ export default function LandlordOnboarding({ initialUser }: LandlordOnboardingPr
                   </>
                 )}
               </button>
+            </div>
+
+            <div className="border-t border-gray-100 pt-5 space-y-4">
+              <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                <span>I have read and agree to the CampusNest <Link href="/terms" target="_blank" className="font-semibold text-emerald-700 underline">Terms and Conditions</Link> and <Link href="/privacy" target="_blank" className="font-semibold text-emerald-700 underline">Privacy Policy</Link>.</span>
+              </label>
+              <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600" />
+                <span>I consent to receive CampusNest product updates, marketing emails, and relevant partner communications. You can opt out at any time.</span>
+              </label>
             </div>
 
           </form>

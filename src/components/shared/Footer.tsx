@@ -106,8 +106,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/terms" className="hover:text-white transition-colors">
+                  Terms and Conditions
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-white transition-colors">
-                  POPIA & Data Security
+                  Privacy Policy & POPIA
                 </Link>
               </li>
             </ul>

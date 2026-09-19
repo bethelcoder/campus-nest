@@ -59,6 +59,7 @@ function extractBaseDescription(desc?: string | null): string {
   return desc.trim();
 }
 import GoogleMap, { type MapLocation } from "@/components/maps/google-map";
+import PropertyLocationPicker, { type PropertyLocationValue } from "@/components/maps/property-location-picker";
 
 export interface RoomTypeItem {
   id: string;
@@ -391,7 +392,32 @@ export default function ResidenceBuilderPage({ user, initialProperty }: Residenc
       description: extractBaseDescription(initialProperty.description),
     };
   });
-  const [mapLocation, setMapLocation] = useState<MapLocation | null>(null);
+  const [mapLocation, setMapLocation] = useState<MapLocation | null>(() => {
+    if (initialProperty?.latitude && initialProperty?.longitude) {
+      return {
+        latitude: Number(initialProperty.latitude),
+        longitude: Number(initialProperty.longitude),
+      };
+    }
+    return null;
+  });
+
+  const handleLocationPickerChange = (val: PropertyLocationValue) => {
+    setBasics((prev) => ({
+      ...prev,
+      streetAddress: val.streetAddress || prev.streetAddress,
+      suburb: val.suburb || prev.suburb,
+      city: val.city || prev.city,
+      postalCode: val.postalCode || prev.postalCode,
+      distanceToCampus: val.distanceToCampus !== undefined ? String(val.distanceToCampus) : prev.distanceToCampus,
+      institution: val.selectedUniversity || prev.institution,
+      campus: val.selectedCampus || prev.campus,
+    }));
+    setMapLocation({
+      latitude: val.latitude,
+      longitude: val.longitude,
+    });
+  };
 
   // Live Student Public URL State (Clean slug: /residences/name)
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -1272,19 +1298,32 @@ export default function ResidenceBuilderPage({ user, initialProperty }: Residenc
               </div>
             </div>
 
-            <div className="space-y-3 rounded-lg border border-[#005F56]/15 bg-white p-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-700">Pin residence on map</p>
-                <p className="mt-1 text-xs text-slate-500">Confirm the building location so students can find it and get directions.</p>
+            <div className="space-y-3 rounded-xl border border-[#005F56]/20 bg-white p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <LuMapPin className="w-4 h-4 text-[#005F56]" />
+                    Google Maps Verification &amp; Campus Proximity
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Search your property address using Google Places, drag the pin to the main entrance, and verify walking distance to the target campus gate.
+                  </p>
+                </div>
               </div>
-              <GoogleMap
-                address={`${basics.streetAddress}, ${basics.suburb}, ${basics.city}`}
-                interactive
-                location={mapLocation}
-                onLocationChange={setMapLocation}
-                className="h-64"
+              <PropertyLocationPicker
+                value={{
+                  streetAddress: basics.streetAddress,
+                  suburb: basics.suburb,
+                  city: basics.city,
+                  postalCode: basics.postalCode,
+                  latitude: mapLocation?.latitude,
+                  longitude: mapLocation?.longitude,
+                  distanceToCampus: basics.distanceToCampus ? Number(basics.distanceToCampus) : undefined,
+                  selectedUniversity: basics.institution,
+                  selectedCampus: basics.campus,
+                }}
+                onChange={handleLocationPickerChange}
               />
-              <p className="text-[11px] text-slate-500">Drag the marker to the exact entrance. The location is optional until a Google Maps key is configured.</p>
             </div>
           </div>
 

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import GoogleMapWrapper, { MapMarkerItem } from "./google-map-wrapper";
-import { SA_CAMPUSES, CampusLocation, calculateDistanceKm } from "@/lib/maps/campuses";
+import { SA_CAMPUSES, CampusLocation, calculateDistanceKm, findNearestCampus } from "@/lib/maps/campuses";
 import { getCoordinatesForAddress } from "@/lib/maps/geocoding";
 import { getPublicMediaUrl, FALLBACK_RESIDENCE_IMAGES } from "@/lib/media";
 import {
@@ -16,6 +16,8 @@ import {
   LuArrowUpRight,
   LuSlidersHorizontal,
   LuSparkles,
+  LuNavigation,
+  LuLoader,
 } from "react-icons/lu";
 
 export interface ExplorerProperty {
@@ -60,6 +62,39 @@ export default function PropertiesExplorerMap({
   const [maxPriceFilter, setMaxPriceFilter] = useState<number>(10000);
   const [nsfasOnly, setNsfasOnly] = useState(false);
   const [radiusFilter, setRadiusFilter] = useState<number>(3000); // 3km radius
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locatingUser, setLocatingUser] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
+
+  const handleGetLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationNotice("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocatingUser(true);
+    setLocationNotice(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(coords);
+        setLocatingUser(false);
+        const nearest = findNearestCampus(coords.lat, coords.lng);
+        if (nearest) {
+          setActiveCampusId(nearest.campus.id);
+          setLocationNotice(`Located! Nearest campus: ${nearest.campus.universityName} (${nearest.distanceKm} km away)`);
+        } else {
+          setLocationNotice("Location detected successfully");
+        }
+        setTimeout(() => setLocationNotice(null), 5000);
+      },
+      (err) => {
+        setLocatingUser(false);
+        setLocationNotice("Unable to retrieve GPS location. Please allow location access in your browser.");
+        setTimeout(() => setLocationNotice(null), 5000);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   // Selected campus
   const currentCampus =
@@ -115,16 +150,27 @@ export default function PropertiesExplorerMap({
 
   // Construct Map Markers (Campuses + Filtered Properties)
   const mapMarkers: MapMarkerItem[] = useMemo(() => {
-    const markers: MapMarkerItem[] = [
-      {
-        id: `campus-${currentCampus.id}`,
-        lat: currentCampus.lat,
-        lng: currentCampus.lng,
-        title: `${currentCampus.shortCode} Campus`,
-        isCampus: true,
-        iconType: "campus",
-      },
-    ];
+    const markers: MapMarkerItem[] = [];
+
+    if (userLocation) {
+      markers.push({
+        id: "user-gps-location",
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        title: "Your GPS Location",
+        subtitle: "Near Me Center",
+        iconType: "residence",
+      });
+    }
+
+    markers.push({
+      id: `campus-${currentCampus.id}`,
+      lat: currentCampus.lat,
+      lng: currentCampus.lng,
+      title: `${currentCampus.shortCode} Campus`,
+      isCampus: true,
+      iconType: "campus",
+    });
 
     processedProperties.forEach((p) => {
       markers.push({
@@ -142,10 +188,10 @@ export default function PropertiesExplorerMap({
     });
 
     return markers;
-  }, [currentCampus, processedProperties]);
+  }, [currentCampus, processedProperties, userLocation]);
 
   const handleMarkerClick = (marker: MapMarkerItem) => {
-    if (marker.isCampus) return;
+    if (marker.isCampus || marker.id === "user-gps-location") return;
     setSelectedPropId(marker.id);
     const prop = processedProperties.find((p) => p.id === marker.id);
     if (prop && onSelectProperty) onSelectProperty(prop);
@@ -156,6 +202,31 @@ export default function PropertiesExplorerMap({
       {/* Top Filter & Campus Switcher Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs">
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleGetLocation}
+            disabled={locatingUser}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs ${
+              userLocation
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-[#005F56] text-white hover:bg-[#004d46]"
+            } disabled:opacity-60`}
+          >
+            {locatingUser ? (
+              <>
+                <LuLoader className="w-3.5 h-3.5 animate-spin" />
+                <span>Locating...</span>
+              </>
+            ) : (
+              <>
+                <LuNavigation className="w-3.5 h-3.5" />
+                <span>{userLocation ? "Near Me (Active)" : "Near Me (GPS)"}</span>
+              </>
+            )}
+          </button>
+
+          <span className="text-slate-300">|</span>
+
           <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
             <LuCompass className="w-3.5 h-3.5 text-[#005F56]" /> Campus:
           </span>
@@ -220,16 +291,23 @@ export default function PropertiesExplorerMap({
         </div>
       </div>
 
+      {locationNotice && (
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2 animate-in fade-in">
+          <LuNavigation className="w-4 h-4 text-[#005F56] shrink-0" />
+          <span>{locationNotice}</span>
+        </div>
+      )}
+
       {/* Main Map Canvas with Floating Property Preview Card */}
       <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-xs">
         <GoogleMapWrapper
-          center={{ lat: currentCampus.lat, lng: currentCampus.lng }}
-          zoom={14}
+          center={userLocation || { lat: currentCampus.lat, lng: currentCampus.lng }}
+          zoom={userLocation ? 15 : 14}
           markers={mapMarkers}
           selectedMarkerId={selectedPropId}
           onMarkerClick={handleMarkerClick}
           radiusCircle={{
-            center: { lat: currentCampus.lat, lng: currentCampus.lng },
+            center: userLocation || { lat: currentCampus.lat, lng: currentCampus.lng },
             radiusMeters: radiusFilter,
             color: "#005F56",
           }}

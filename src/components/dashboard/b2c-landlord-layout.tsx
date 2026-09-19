@@ -17,6 +17,7 @@ import {
   UsersIcon,
 } from "@/components/common/Icons";
 import { LuPlus, LuBuilding2, LuCheck } from "react-icons/lu";
+import NotificationBellDropdown from "@/components/dashboard/notification-bell-dropdown";
 
 interface B2cLandlordLayoutProps {
   children: React.ReactNode;
@@ -78,6 +79,7 @@ export default function B2cLandlordLayout({
   ];
 
   const complianceNavItems = [
+    { label: "Business KYC & Banking", href: "/landlord/verification", icon: ShieldCheckIcon },
     { label: "13-Point Safety Audit", href: "/dashboard/landlord#audit", icon: ShieldCheckIcon, badge: properties.length > 0 && properties[0].safetyScore ? `${Number(properties[0].safetyScore).toFixed(1)}/10` : undefined },
     { label: "Active Leases", href: "/dashboard/landlord#leases", icon: FileTextIcon },
   ];
@@ -300,13 +302,7 @@ export default function B2cLandlordLayout({
                   <span>Add Residence</span>
                 </Link>
 
-                <button
-                  type="button"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer"
-                >
-                  <BellIcon size={18} />
-                  <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-                </button>
+                <NotificationBellDropdown role="LANDLORD" />
 
                 <div className="relative">
                   <button

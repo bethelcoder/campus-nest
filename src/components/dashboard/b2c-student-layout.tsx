@@ -18,6 +18,7 @@ import {
   ChevronDownIcon,
   StoreFrontIcon,
 } from "@/components/common/Icons";
+import NotificationBellDropdown from "@/components/dashboard/notification-bell-dropdown";
 
 interface B2cStudentLayoutProps {
   children: React.ReactNode;
@@ -323,14 +324,7 @@ export default function B2cStudentLayout({
 
               {/* Notification Bell + User Profile */}
               <div className="flex items-center gap-3.5 relative">
-                <button
-                  type="button"
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer"
-                  aria-label="Notifications"
-                >
-                  <BellIcon size={18} />
-                  <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-[#EF4444]" />
-                </button>
+                <NotificationBellDropdown role="STUDENT" />
 
                 <div className="relative">
                   <button
