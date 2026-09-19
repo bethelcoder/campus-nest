@@ -71,9 +71,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const checklistItems = await prisma.checklistItem.findMany({
+      where: { propertyId: params.id },
+      select: { passed: true },
+    });
+    if (!checklistItems.length || checklistItems.some((item) => item.passed !== true)) {
+      return NextResponse.json(
+        { error: "This residence cannot be verified until every safety and compliance checkpoint is marked as passed." },
+        { status: 409 }
+      );
+    }
+
     const updated = await prisma.property.update({
       where: { id: params.id },
       data: {
+        status: "VERIFIED",
         physicalInspectionAt: new Date(parsed.data.physicalInspectionAt),
         physicalInspectorName: parsed.data.physicalInspectorName,
         accreditationReference: parsed.data.accreditationReference,

@@ -84,6 +84,13 @@ export default async function StudentFunderLetterPage() {
                 !!property.physicalInspectorName &&
                 total > 0 &&
                 passed === total;
+              const eligibilityMessage = property.status !== "VERIFIED"
+                ? "The residence has not been accredited by CampusNest administration yet."
+                : !property.physicalInspectionAt || !property.physicalInspectorName
+                  ? "CampusNest has not recorded the physical inspection yet."
+                  : total === 0 || passed !== total
+                    ? `The residence safety checklist is incomplete (${passed} of ${total} checkpoints passed).`
+                    : "";
 
               return (
                 <article key={application.id} className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] md:p-6">
@@ -107,7 +114,7 @@ export default async function StudentFunderLetterPage() {
                       ? `Letter request ${application.funderLetterRequest.status.toLowerCase().replace("_", " ")} · Reference ${application.funderLetterRequest.letterReference}`
                       : eligible
                         ? `Eligible for request · physically inspected by ${property.physicalInspectorName}`
-                        : "Not eligible yet · the residence needs accreditation, a recorded physical inspection, and a fully passed checklist."}
+                        : `Not eligible yet · ${eligibilityMessage}`}
                   </div>
                 </article>
               );
