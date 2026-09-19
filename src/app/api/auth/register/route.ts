@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, formatSrcAlias } from "@/lib/auth";
 import { generateOtp, hashOtp, otpExpiryDate, isAllowedUniversityDomain } from "@/lib/otp";
 import { sendOtpEmail } from "@/lib/email";
+import { notifyAdmins } from "@/lib/notifications";
 
 const registerSchema = z.object({
   role: z.enum(["STUDENT", "LANDLORD", "SRC_REPRESENTATIVE"]), // university admins are provisioned manually
@@ -108,6 +109,13 @@ export async function POST(req: NextRequest) {
         onboardingStep: true,
       },
     });
+
+    await notifyAdmins({
+      type: "NEW_USER_SIGNUP",
+      title: "New user sign-up",
+      message: `${finalName} ${finalSurname} registered as a ${data.role.replaceAll("_", " ").toLowerCase()}.`,
+      metadata: { userId: user.id, role: data.role },
+    }).catch((err) => console.warn("Admin notification error:", err));
 
     // Send 6-digit OTP email via Brevo
     await sendOtpEmail({

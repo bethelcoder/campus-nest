@@ -44,6 +44,18 @@ export default function B2cAdminLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; createdAt: string }>>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  async function loadNotifications() {
+    const response = await fetch("/api/admin/notifications");
+    if (!response.ok) return;
+    const data = await response.json();
+    setNotifications(data.notifications);
+    setUnreadCount(data.unreadCount);
+    setNotificationsOpen(true);
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
@@ -72,6 +84,7 @@ export default function B2cAdminLayout({
       href: "/dashboard/admin/escalations",
       icon: LuShieldAlert,
     },
+    { label: "User Directory", href: "/dashboard/admin/users", icon: LuUsers },
   ];
 
   const systemNavItems = [
@@ -242,13 +255,33 @@ export default function B2cAdminLayout({
 
                 <button
                   type="button"
+                  onClick={loadNotifications}
+                  aria-label="Open notifications"
                   className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors shadow-2xs cursor-pointer"
                 >
                   <BellIcon size={18} />
-                  {pendingCount > 0 && (
-                    <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">{unreadCount}</span>
                   )}
                 </button>
+                {notificationsOpen && (
+                  <div className="absolute right-16 top-12 z-50 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-2">
+                      <p className="text-sm font-bold text-slate-900">Latest notifications</p>
+                      <button type="button" onClick={() => setNotificationsOpen(false)} className="text-xs text-slate-500">Close</button>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? <p className="px-2 py-6 text-center text-xs text-slate-500">No notifications yet.</p> : notifications.map((notification) => (
+                        <div key={notification.id} className="border-b border-slate-100 px-2 py-3 last:border-0">
+                          <p className="text-xs font-bold text-slate-900">{notification.title}</p>
+                          <p className="mt-1 text-xs text-slate-600">{notification.message}</p>
+                          <p className="mt-1 text-[10px] text-slate-400">{new Date(notification.createdAt).toLocaleString("en-ZA")}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {unreadCount > 0 && <button type="button" onClick={async () => { await fetch("/api/admin/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" }); setUnreadCount(0); }} className="mt-2 w-full rounded-lg bg-slate-900 py-2 text-xs font-bold text-white">Mark all read</button>}
+                  </div>
+                )}
 
                 <div className="relative">
                   <button

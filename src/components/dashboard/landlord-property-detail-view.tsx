@@ -143,8 +143,8 @@ export default function LandlordPropertyDetailView({
           )}
 
           <Link
-            href={`/landlord/tenancies?propertyId=${property.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            href={`/landlord/properties/${property.id}/tenancy`}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
           >
             <LuUserCheck className="w-3.5 h-3.5" />
             <span>Manage Tenancies ({occupiedBeds})</span>
@@ -285,8 +285,8 @@ export default function LandlordPropertyDetailView({
             </div>
 
             <Link
-              href={`/landlord/tenancies?propertyId=${property.id}`}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+              href={`/landlord/properties/${property.id}/tenancy`}
+              className="text-xs font-bold text-[#005F56] hover:text-[#004d46] flex items-center gap-1"
             >
               <span>Manage Room Allocations</span>
               <LuArrowUpRight className="w-3.5 h-3.5" />
@@ -479,8 +479,8 @@ export default function LandlordPropertyDetailView({
             </div>
 
             <Link
-              href={`/landlord/tenancies?propertyId=${property.id}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              href={`/landlord/properties/${property.id}/tenancy`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#005F56] hover:bg-[#004d46] text-white text-xs font-bold shadow-xs cursor-pointer"
             >
               <LuPlus className="w-3.5 h-3.5" />
               <span>Full Tenancy Manager</span>

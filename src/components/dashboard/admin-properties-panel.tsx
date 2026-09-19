@@ -52,14 +52,14 @@ export default function AdminPropertiesPanel({ initialProperties }: AdminPropert
     });
   }, [properties, statusFilter, searchTerm]);
 
-  async function updateStatus(propertyId: string, status: "VERIFIED" | "FLAGGED" | "REJECTED" | "PENDING_VERIFICATION") {
+  async function updateStatus(propertyId: string, status: "VERIFIED" | "FLAGGED" | "REJECTED" | "PENDING_VERIFICATION", verify = false, message?: string) {
     setUpdatingId(propertyId);
     setError(null);
     try {
       const res = await fetch(`/api/admin/properties/${propertyId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, verify, message }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update property");
@@ -224,6 +224,30 @@ export default function AdminPropertiesPanel({ initialProperties }: AdminPropert
                       >
                         <LuFlag className="w-3.5 h-3.5" />
                         Flag Violation
+                      </button>
+                    )}
+                    {!property.physicalInspectionAt && property.status !== "REJECTED" && (
+                      <button
+                        type="button"
+                        disabled={updatingId === property.id}
+                        onClick={() => updateStatus(property.id, property.status as "VERIFIED" | "FLAGGED" | "PENDING_VERIFICATION", true)}
+                        className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 disabled:opacity-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <LuShieldCheck className="w-3.5 h-3.5" />
+                        Verify inspection
+                      </button>
+                    )}
+                    {property.status !== "REJECTED" && (
+                      <button
+                        type="button"
+                        disabled={updatingId === property.id}
+                        onClick={() => {
+                          const message = window.prompt("Optional message to the landlord:");
+                          if (message !== null) updateStatus(property.id, property.status as "VERIFIED" | "FLAGGED" | "REJECTED" | "PENDING_VERIFICATION", false, message || undefined);
+                        }}
+                        className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 disabled:opacity-50 text-slate-700 text-xs font-bold cursor-pointer"
+                      >
+                        Message landlord
                       </button>
                     )}
                     {property.status === "FLAGGED" && (

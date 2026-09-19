@@ -17,7 +17,7 @@ interface ResidencePageProps {
 async function getPropertyBySlugOrId(slug: string) {
   // 1. Try by exact ID
   let property = await prisma.property.findUnique({
-    where: { id: slug },
+    where: { id: slug, status: "VERIFIED" },
     include: {
       checklistItems: true,
       landlord: {
@@ -38,6 +38,7 @@ async function getPropertyBySlugOrId(slug: string) {
   const titleSearch = slug.replace(/-/g, " ");
   property = await prisma.property.findFirst({
     where: {
+      status: "VERIFIED",
       title: {
         contains: titleSearch,
         mode: "insensitive",
@@ -61,6 +62,7 @@ async function getPropertyBySlugOrId(slug: string) {
 
   // 3. Match by normalized slug across properties
   const allProps = await prisma.property.findMany({
+    where: { status: "VERIFIED" },
     include: {
       checklistItems: true,
       landlord: {

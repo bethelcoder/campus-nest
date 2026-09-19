@@ -33,10 +33,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import React, { Suspense } from "react";
+import TopProgressBar from "@/components/common/TopProgressBar";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`scroll-smooth ${poppins.variable}`}>
       <body className={`${poppins.className} min-h-screen font-poppins bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white`}>
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         {children}
       </body>
     </html>
