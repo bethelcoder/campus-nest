@@ -14,11 +14,11 @@ npm run dev
 ```
 
 Seeded demo accounts (password for all: `password123`):
-- Admin — `admin@wits.ac.za`
+- Platform admin (internal) — `admin@campusnest.co.za` — sign in at `/admin/login`
 - Landlord — `landlord@example.com` (owns one VERIFIED property with a full checklist)
 - Student — `student@example.com` (email pre-verified, has an ACTIVE tenancy — ready to generate a letter)
 
-To walk through the core flow end-to-end after seeding: log in as landlord → confirm the seeded tenancy is ACTIVE → `POST /api/confirmation/generate` with that tenancy's id → log in as admin → `/admin/letters` → Endorse → Send.
+To walk through the core flow end-to-end after seeding: log in as landlord → confirm the seeded tenancy is ACTIVE → `POST /api/confirmation/generate` with that tenancy's id → log in as admin at `/admin/login` → `/dashboard/admin/letters` → Endorse → Send.
 
 ## What I changed from the source docs, and why
 

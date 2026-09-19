@@ -18,14 +18,19 @@ async function main() {
   const password = await bcrypt.hash("password123", 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@wits.ac.za" },
-    update: {},
+    where: { email: "admin@campusnest.co.za" },
+    update: {
+      emailVerifiedAt: new Date(),
+      onboardingCompleted: true,
+    },
     create: {
       role: "ADMIN",
-      name: "Thandiwe",
-      surname: "Mokoena",
-      email: "admin@wits.ac.za",
+      name: "CampusNest",
+      surname: "Ops",
+      email: "admin@campusnest.co.za",
       passwordHash: password,
+      emailVerifiedAt: new Date(),
+      onboardingCompleted: true,
     },
   });
 

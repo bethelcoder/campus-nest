@@ -151,12 +151,12 @@ export default function LandlordPropertyDetailView({
           </Link>
 
           <Link
-            href={`/properties/${property.id}`}
+            href={`/landlord/properties/${property.id}/preview`}
             target="_blank"
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
           >
             <LuEye className="w-3.5 h-3.5" />
-            <span>Public View</span>
+            <span>Preview</span>
           </Link>
         </div>
       </div>

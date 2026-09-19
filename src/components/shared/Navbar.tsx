@@ -184,7 +184,7 @@ export function Navbar({ userRole, userName }: NavbarProps) {
                     Admin Console
                   </Link>
                   <Link
-                    href="/admin/letters"
+                    href="/dashboard/admin/letters"
                     className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
                   >
                     Verification Queue
