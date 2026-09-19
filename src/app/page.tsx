@@ -17,6 +17,7 @@ export default async function HomePage() {
       bedrooms: true,
       safetyScore: true,
       distanceToCampus: true,
+      images: true,
     },
   });
 
@@ -29,6 +30,7 @@ export default async function HomePage() {
     bedrooms: p.bedrooms,
     safetyScore: p.safetyScore !== null ? Number(p.safetyScore) : null,
     distanceToCampus: p.distanceToCampus !== null ? Number(p.distanceToCampus) : null,
+    images: p.images || [],
   }));
 
   return <StudentLanding initialProperties={serializedProperties} />;
